@@ -216,7 +216,7 @@ antes de escribir nada en la tabla.
 | Formato | Cómo se obtiene | Qué tal queda |
 |---|---|---|
 | **Excel (.xlsx)** | una fila por producto, con encabezados | completo, es el camino bueno |
-| **CSV exportado** | desde el ERP, el mismo reporte | igual de bueno |
+| **CSV exportado** | desde el DMS, el mismo reporte | igual de bueno |
 | Texto con columnas | `pdftotext -layout listado.pdf listado.txt` | **no sirve**, ver abajo |
 | PDF | `node convertir-listado.js listado.pdf` | igual que el anterior |
 
@@ -268,7 +268,7 @@ En el listado que se revisó (1123 productos), de 1093 filas con valor en
 clases de las malas:
 
 ```
-SKU 10223103  Alterna 102231031   relleno del ERP: es el propio SKU con un dígito
+SKU 10223103  Alterna 102231031   relleno del DMS: es el propio SKU con un dígito
 SKU 310009421 Alterna 7792993059445   falla el dígito verificador por uno
 ```
 
@@ -468,7 +468,7 @@ El desplegable **Qué respondió cada fuente** muestra el detalle de los tres in
 | [js/tabla.js](js/tabla.js) | La tabla compartida del servidor, en `datos/tabla.json` |
 | [js/sincronizar.js](js/sincronizar.js) | Mantiene al navegador en línea con la tabla del servidor |
 | [js/xlsx.js](js/xlsx.js) | Lector mínimo de .xlsx, sin librerías |
-| [js/listado.js](js/listado.js) | Lee el listado de precios del ERP y clasifica cada fila |
+| [js/listado.js](js/listado.js) | Lee el listado de precios del DMS y clasifica cada fila |
 | [js/revision.js](js/revision.js) | Cola de lo que el listado dejó sin resolver |
 | [js/scanner.js](js/scanner.js) | Cámara con ZXing y captura del escáner USB |
 | [js/ean13.js](js/ean13.js) | Dibuja códigos EAN-13 en canvas |
@@ -477,7 +477,7 @@ El desplegable **Qué respondió cada fuente** muestra el detalle de los tres in
 | [server.js](server.js) | Servidor estático y proxy de consulta, HTTP o HTTPS |
 | [generar-certificado.js](generar-certificado.js) | Certificado autofirmado para la cámara en el teléfono |
 | [consultar.js](consultar.js) | Consulta desde la terminal, para medir cobertura |
-| [convertir-listado.js](convertir-listado.js) | Convierte el listado del ERP en CSV desde la terminal |
+| [convertir-listado.js](convertir-listado.js) | Convierte el listado del DMS en CSV desde la terminal |
 | [config.ejemplo.json](config.ejemplo.json) | Plantilla de credenciales de GS1 |
 
 ## Tema y paginación
@@ -515,7 +515,7 @@ Desde la pestaña **Productos** se puede buscar, corregir un nombre, exportar a 
 - La tabla de SKU vive en el servidor (`datos/tabla.json`) y cada navegador guarda una copia para seguir trabajando sin red. **Ese archivo es dato propio: ninguna fuente puede devolvértelo si se pierde.** Respáldalo.
 - El servidor no pide contraseña. Para una red de tienda está bien; no lo expongas a internet.
 - El vínculo entre la caja y la unidad se **propone** por los 12 dígitos base del GTIN, y hay proveedores que no respetan esa norma. La propuesta siempre la confirma una persona.
-- El precio viene del listado del ERP y vale hasta que salga el siguiente listado. Cargar uno nuevo actualiza precio y existencia de los SKU que ya están, y respeta el nombre interno por si se corrigió a mano.
+- El precio viene del listado del DMS y vale hasta que salga el siguiente listado. Cargar uno nuevo actualiza precio y existencia de los SKU que ya están, y respeta el nombre interno por si se corrigió a mano.
 - El listado trae **un código por SKU**, al nivel en que se vende. Los demás niveles de empaque se agregan escaneando.
 - Un código que ya pertenece a otro SKU no se mueve solo: la fila queda sin vincular y se dice a cuál pertenece. En el listado real pasa con 36 códigos, casi todos entre un SKU y su variante (`N16939` y `N16939-1`).
 - La comprobación del precio detecta filas corridas, no precios equivocados. Un listado bien formado con un precio mal digitado cuadra igual.
