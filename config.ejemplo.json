@@ -1,0 +1,18 @@
+{
+  "_nota": "Copia este archivo como config.json y pon tus credenciales. config.json no debe compartirse ni subirse a ningun repositorio: contiene una clave.",
+  "_comoObtenerlo": "Verified by GS1 no es publico. La clave y la URL las entrega la organizacion GS1 de tu pais tras firmar contrato. En Colombia: GS1 Colombia / LOGYCA, https://gs1co.org",
+
+  "gs1": {
+    "_url": "URL de consulta por GTIN que te entregue GS1. Usa {gtin} donde va el codigo.",
+    "url": "",
+
+    "_clave": "La clave de API de tu contrato.",
+    "clave": "",
+
+    "_esquema": "Como viaja la clave: 'bearer' (Authorization: Bearer ...), 'apikey' (cabecera APIKey) o 'cabecera' para usar el nombre de abajo.",
+    "esquema": "apikey",
+
+    "_cabecera": "Solo si esquema es 'cabecera': nombre exacto de la cabecera.",
+    "cabecera": "x-api-key"
+  }
+}

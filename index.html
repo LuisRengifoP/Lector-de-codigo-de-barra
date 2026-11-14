@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0f766e">
+<title>Lector de codigos de barras</title>
+<link rel="stylesheet" href="css/styles.css">
+<script>
+/* El tema se fija antes de pintar: si se esperara a ui.js, la primera imagen
+   seria clara y despues saltaria a oscura. Sin preferencia manda el sistema. */
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('slb.ui.v1') || '{}');
+    var t = (p.tema === 'claro' || p.tema === 'oscuro') ? p.tema
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro');
+    document.documentElement.setAttribute('data-tema', t);
+  } catch (e) { /* almacenamiento bloqueado: queda el tema del sistema */ }
+})();
+</script>
+</head>
+<body>
+
+<header class="barra">
+  <div class="marca">
+    <span class="marca-icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M3 5v14M6.5 5v14M10 5v14M13.5 5v10M17 5v14M20.5 5v14"/>
+      </svg>
+    </span>
+    <div>
+      <h1>Lector de codigos</h1>
+      <p class="marca-sub">Escanea, identifica y cruza con la tabla de la empresa</p>
+    </div>
+  </div>
+
+  <nav class="pestanas" role="tablist" aria-label="Modulos">
+    <button class="pestana activa" data-vista="escanear" role="tab" aria-selected="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+        <path d="M7 8v8M10.5 8v8M14 8v8M17 8v8"/>
+      </svg>
+      <span class="pestana-texto">Escanear</span>
+    </button>
+    <button class="pestana" data-vista="skus" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h6.9a2 2 0 0 1 1.4.6l7.5 7.5a2 2 0 0 1 0 2.8z"/>
+        <circle cx="7.5" cy="7.5" r="1.3"/>
+      </svg>
+      <span class="pestana-texto">SKU</span>
+    </button>
+    <button class="pestana" data-vista="listado" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+        <path d="M14 3v5h5M9 13h6M9 17h4"/>
+      </svg>
+      <span class="pestana-texto">Listado</span>
+    </button>
+    <button class="pestana" data-vista="productos" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 8 12 3 3 8l9 5 9-5z"/>
+        <path d="M3 8v8l9 5 9-5V8M12 13v8"/>
+      </svg>
+      <span class="pestana-texto">Productos</span>
+    </button>
+    <button class="pestana" data-vista="historial" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3.5 2"/>
+      </svg>
+      <span class="pestana-texto">Historial</span>
+    </button>
+  </nav>
+
+  <div class="barra-acciones">
+    <button id="btn-tema" class="btn-tema" type="button" aria-label="Cambiar el tema">
+      <svg class="icono-luna" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+      <svg class="icono-sol" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+<!-- ───────────── Vista: escanear ───────────── -->
+<section id="vista-escanear" class="vista activa" role="tabpanel" aria-label="Escanear">
+
+  <div class="barra-estados">
+    <p id="estado-fuentes" class="estado-fuentes">Comprobando las fuentes de consulta...</p>
+    <p id="estado-tabla" class="estado-fuentes">Buscando la tabla del servidor...</p>
+  </div>
+
+  <div class="rejilla-escaner">
+
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <h2>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M3 5v14M6.5 5v14M10 5v14M13.5 5v10M17 5v14M20.5 5v14"/>
+          </svg>
+          Entrada del codigo
+        </h2>
+        <span id="estado-escaner" class="pildora">Listo</span>
+      </div>
+
+      <label class="campo">
+        <span class="campo-etiqueta">Codigo de barras</span>
+        <div class="campo-grupo">
+          <input id="entrada-codigo" type="text" inputmode="numeric" autocomplete="off"
+                 placeholder="13 digitos, sin espacios" aria-describedby="ayuda-codigo">
+          <button id="btn-buscar" class="btn btn-primario">Buscar</button>
+        </div>
+      </label>
+      <p id="ayuda-codigo" class="ayuda">El lector USB escribe solo y manda Enter.</p>
+
+      <div class="separador"><span>o</span></div>
+
+      <button id="btn-camara" class="btn btn-secundario ancho">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Usar la camara
+      </button>
+
+      <div id="camara-envoltorio" class="camara oculto">
+        <video id="video" playsinline muted></video>
+        <div class="camara-guia" aria-hidden="true"></div>
+      </div>
+      <p id="aviso-camara" class="nota nota-aviso oculto"></p>
+
+      <details class="detalle">
+        <summary>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
+          </svg>
+          La camara pide HTTPS
+        </summary>
+        <div class="detalle-cuerpo">
+          <p>
+            El navegador solo entrega la camara en un contexto seguro. Abre la
+            pagina por <code>https://</code> o en <code>localhost</code>; por
+            <code>http://</code> con la IP del equipo el boton queda apagado.
+          </p>
+          <p>
+            <code>node server.js</code> ya sirve HTTPS en el puerto 8443 con el
+            certificado de <code>cert/</code>. Al ser propio, el telefono avisa
+            una vez: hay que aceptarlo.
+          </p>
+        </div>
+      </details>
+
+    </div>
+
+    <div class="tarjeta" id="panel-resultado">
+      <div class="tarjeta-cabecera">
+        <h2>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>
+          </svg>
+          Resultado
+        </h2>
+      </div>
+      <div id="resultado" class="resultado-vacio">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M3 5v14M7 5v14M11 5v14M15 5v9M19 5v14"/>
+        </svg>
+        <p>Esperando una lectura</p>
+      </div>
+
+      <!-- Verificacion contra la tabla de SKU de la empresa: a que producto
+           interno pertenece el codigo leido, y cuantas unidades trae ese empaque. -->
+      <div id="bloque-sku"></div>
+    </div>
+
+  </div>
+
+  <div class="tarjeta" id="panel-alta" hidden>
+    <div class="tarjeta-cabecera">
+      <h2>Ponerle nombre tu mismo</h2>
+      <span class="pildora pildora-aviso">Ninguna fuente lo tiene</span>
+    </div>
+    <form id="form-alta" class="formulario">
+      <label class="campo">
+        <span class="campo-etiqueta">Codigo</span>
+        <input id="alta-codigo" type="text" readonly>
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Nombre del producto *</span>
+        <input id="alta-nombre" type="text" required placeholder="Ej: Arroz blanco 1 kg">
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Categoria</span>
+        <input id="alta-categoria" type="text" list="lista-categorias" placeholder="Alimentos">
+        <datalist id="lista-categorias"></datalist>
+      </label>
+      <div class="formulario-acciones">
+        <button type="submit" class="btn btn-primario">Guardar nombre</button>
+        <button type="button" id="btn-cancelar-alta" class="btn btn-plano">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+</section>
+
+<!-- ───────────── Vista: SKU ─────────────
+     Dato propio de la empresa: el SKU que asigna compras y *todos* los codigos
+     de barras con que ese producto llega. La caja y la unidad traen codigos
+     distintos; el nombre del proveedor no sirve para cruzar nada. -->
+<section id="vista-skus" class="vista" role="tabpanel" aria-label="SKU">
+
+  <div class="titulo-vista">
+    <h2>Tabla de SKU</h2>
+    <p>El codigo interno de compras y todos los codigos de barras con que llega</p>
+  </div>
+
+  <div class="metricas" id="metricas-sku"></div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h6.9a2 2 0 0 1 1.4.6l7.5 7.5a2 2 0 0 1 0 2.8z"/>
+          <circle cx="7.5" cy="7.5" r="1.3"/>
+        </svg>
+        SKU y sus codigos
+      </h2>
+      <div class="acciones-cabecera">
+        <button id="btn-sku-nuevo" class="btn btn-primario btn-pequeno">Nuevo SKU</button>
+        <button id="btn-sku-exportar-csv" class="btn btn-secundario btn-pequeno">CSV</button>
+        <button id="btn-sku-exportar-json" class="btn btn-secundario btn-pequeno">JSON</button>
+        <label class="btn btn-secundario btn-pequeno">
+          Importar
+          <input id="entrada-importar-sku" type="file" accept=".json,.csv,.txt" hidden>
+        </label>
+        <button id="btn-sku-vaciar" class="btn btn-plano btn-pequeno">Vaciar</button>
+      </div>
+    </div>
+
+    <p class="nota">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>
+      </svg>
+      <span>La caja y la unidad traen <strong>codigos distintos</strong>. La
+      cantidad de un empaque solo la sabe quien lo abre.</span>
+    </p>
+
+    <label class="campo campo-buscar">
+      <span class="campo-etiqueta">Buscar</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+      </svg>
+      <input id="busqueda-skus" type="search" placeholder="SKU-00001, harina, 7702..., Colombina" autocomplete="off">
+    </label>
+
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <colgroup>
+          <col style="width:9rem">
+          <col>
+          <col style="width:19rem">
+          <col style="width:5.5rem">
+          <col style="width:9rem">
+          <col style="width:8rem">
+          <col style="width:6rem">
+          <col style="width:15rem">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Nombre interno</th>
+            <th>Codigos de barras</th>
+            <th class="num" title="Unidad de empaque: como viene del proveedor">U/E</th>
+            <th class="col-baja">Categoria</th>
+            <th class="num">Precio</th>
+            <th class="num col-media">Cajas</th>
+            <th class="num">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-skus"></tbody>
+      </table>
+    </div>
+    <div id="sin-skus" class="vacio oculto">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+      </svg>
+      <p>Ningun SKU coincide con la busqueda.</p>
+    </div>
+    <div class="paginacion" id="pag-skus"></div>
+  </div>
+
+</section>
+
+<!-- ───────────── Vista: listado de precios del ERP ───────────── -->
+<section id="vista-listado" class="vista" role="tabpanel" aria-label="Listado">
+
+  <div class="titulo-vista">
+    <h2>Listado de precios del ERP</h2>
+    <p>Carga precios y empaques, y deja en cola lo que falta escanear</p>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 3v5h5M9 13h6M9 17h4"/>
+        </svg>
+        Cargar el listado
+      </h2>
+    </div>
+
+    <p class="nota">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 3v12M8 11l4 4 4-4M4 20h16"/>
+      </svg>
+      <span>Mejor el <strong>Excel (.xlsx)</strong> o el CSV del ERP. El texto
+      del PDF pierde columnas y esas filas quedan en revision.</span>
+    </p>
+
+    <div class="campo-grupo">
+      <label class="btn btn-primario">
+        Elegir archivo
+        <input id="entrada-listado" type="file" accept=".xlsx,.xls,.csv,.txt,.tsv" hidden>
+      </label>
+      <button id="btn-listado-pegar" class="btn btn-secundario">Pegar el texto</button>
+    </div>
+
+    <label class="campo oculto" id="campo-listado-texto">
+      <span class="campo-etiqueta">Pega aqui el listado tal como sale del reporte</span>
+      <textarea id="listado-texto" rows="8" spellcheck="false"
+                placeholder="Codigo     Alterna      Descripcion ..."></textarea>
+      <button id="btn-listado-leer" class="btn btn-secundario btn-pequeno">Leer lo pegado</button>
+    </label>
+
+    <details class="detalle">
+      <summary>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
+        </svg>
+        Que columnas se leen y que se comprueba
+      </summary>
+      <div class="detalle-cuerpo">
+        <p>
+          Se esperan <strong>Codigo</strong> (el SKU de compras),
+          <strong>Alterna</strong> (el codigo de barras),
+          <strong>Descripcion</strong>, <strong>u/e</strong>,
+          <strong>Cajas</strong>, <strong>Precio Und</strong>,
+          <strong>IVA</strong> y <strong>Precio Final</strong>. El proveedor se
+          lee del encabezado de cada seccion del reporte.
+        </p>
+        <p>
+          Formatos aceptados: Excel (.xlsx), CSV y el texto del reporte con las
+          columnas conservadas (<code>pdftotext -layout</code>).
+        </p>
+        <p>
+          De cada fila se comprueba que
+          <code>Precio Und x (1 - Desc) x (1 + IVA)</code> de el precio final.
+          Donde no da, la fila viene corrida de renglon y su codigo de barras
+          puede no ser el de ese producto. Los cigarrillos y algunas bebidas no
+          cuadran por el impuesto al consumo, que no sale en ninguna columna.
+        </p>
+      </div>
+    </details>
+
+    <div id="resumen-listado"></div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 9v4M12 17h.01"/>
+          <path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+        </svg>
+        Pendientes de compras
+      </h2>
+      <div class="acciones-cabecera">
+        <button id="btn-revision-csv" class="btn btn-secundario btn-pequeno">Exportar CSV</button>
+        <button id="btn-revision-vaciar" class="btn btn-plano btn-pequeno">Vaciar cola</button>
+      </div>
+    </div>
+
+    <div class="metricas" id="metricas-revision"></div>
+
+    <p class="nota nota-aviso">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8"/>
+      </svg>
+      <span>Filas sin un codigo de barras usable. Cada una se resuelve
+      <strong>escaneando el empaque</strong>.</span>
+    </p>
+
+    <details class="detalle">
+      <summary>Por que no entran solas a la tabla</summary>
+      <div class="detalle-cuerpo">
+        <p>
+          Son filas del listado que no se pueden guardar como producto
+          escaneable: sin codigo de barras, con un numero que no es un codigo
+          de barras, o que el texto del PDF trajo incompletas.
+        </p>
+        <p>
+          Un codigo inventado no se nota nunca: nadie lo escanea y el producto
+          figura como registrado. Por eso queda pendiente hasta que alguien lea
+          el empaque de verdad.
+        </p>
+      </div>
+    </details>
+
+    <label class="campo campo-buscar">
+      <span class="campo-etiqueta">Buscar</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+      </svg>
+      <input id="busqueda-revision" type="search" placeholder="10223103, ROTHMANS, QUALA" autocomplete="off">
+    </label>
+
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <colgroup>
+          <col style="width:9rem">
+          <col>
+          <col style="width:22rem">
+          <col style="width:8rem">
+          <col style="width:13rem">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Descripcion</th>
+            <th>Problema</th>
+            <th class="num col-media">Precio</th>
+            <th class="num">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-revision"></tbody>
+      </table>
+    </div>
+    <div id="sin-revision" class="vacio oculto">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>
+      </svg>
+      <p>No hay nada pendiente.</p>
+    </div>
+    <div class="paginacion" id="pag-revision"></div>
+  </div>
+
+</section>
+
+<!-- ───────────── Vista: productos ───────────── -->
+<section id="vista-productos" class="vista" role="tabpanel" aria-label="Productos">
+
+  <div class="titulo-vista">
+    <h2>Productos identificados</h2>
+    <p>Cache de los nombres que ya devolvieron las fuentes en linea</p>
+  </div>
+
+  <div class="metricas" id="metricas"></div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>
+        </svg>
+        Nombres en cache
+      </h2>
+      <div class="acciones-cabecera">
+        <button id="btn-nuevo" class="btn btn-secundario btn-pequeno">Agregar a mano</button>
+        <button id="btn-exportar-json" class="btn btn-secundario btn-pequeno">JSON</button>
+        <button id="btn-exportar-csv" class="btn btn-secundario btn-pequeno">CSV</button>
+        <label class="btn btn-secundario btn-pequeno">
+          Importar
+          <input id="entrada-importar" type="file" accept=".json,.csv,.txt" hidden>
+        </label>
+        <button id="btn-vaciar" class="btn btn-plano btn-pequeno">Vaciar cache</button>
+      </div>
+    </div>
+
+    <label class="campo campo-buscar">
+      <span class="campo-etiqueta">Buscar</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+      </svg>
+      <input id="busqueda-productos" type="search" placeholder="arroz, 770..., Bebidas" autocomplete="off">
+    </label>
+
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <colgroup>
+          <col style="width:11rem">
+          <col>
+          <col style="width:11rem">
+          <col style="width:9rem">
+          <col style="width:12rem">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th class="col-media">Categoria</th>
+            <th class="col-baja">Fuente</th>
+            <th class="num">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-productos"></tbody>
+      </table>
+    </div>
+    <div id="sin-productos" class="vacio oculto">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+      </svg>
+      <p>Ningun producto coincide con la busqueda.</p>
+    </div>
+    <div class="paginacion" id="pag-productos"></div>
+  </div>
+
+</section>
+
+<!-- ───────────── Vista: historial ───────────── -->
+<section id="vista-historial" class="vista" role="tabpanel" aria-label="Historial">
+
+  <div class="titulo-vista">
+    <h2>Historial de lecturas</h2>
+    <p>Las ultimas 300 lecturas de este equipo</p>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+        </svg>
+        Lecturas
+      </h2>
+      <button id="btn-limpiar-historial" class="btn btn-plano btn-pequeno">Limpiar</button>
+    </div>
+    <div class="tabla-envoltorio">
+      <table class="tabla">
+        <colgroup>
+          <col style="width:12rem">
+          <col style="width:12rem">
+          <col>
+          <col style="width:11rem">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Codigo</th>
+            <th>Producto</th>
+            <th class="col-media">Fuente</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-historial"></tbody>
+      </table>
+    </div>
+    <div id="sin-historial" class="vacio oculto">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+      </svg>
+      <p>Todavia no hay lecturas registradas.</p>
+    </div>
+    <div class="paginacion" id="pag-historial"></div>
+  </div>
+
+</section>
+
+</main>
+
+<!-- Dialogo de edicion -->
+<dialog id="dialogo-editar">
+  <form id="form-editar" class="formulario">
+    <h2 id="titulo-editar">Editar producto</h2>
+    <label class="campo">
+      <span class="campo-etiqueta">Codigo *</span>
+      <input id="editar-codigo" type="text" required>
+      <span id="editar-codigo-aviso" class="ayuda"></span>
+    </label>
+    <label class="campo">
+      <span class="campo-etiqueta">Nombre *</span>
+      <input id="editar-nombre" type="text" required>
+    </label>
+    <label class="campo">
+      <span class="campo-etiqueta">Categoria</span>
+      <input id="editar-categoria" type="text" list="lista-categorias">
+    </label>
+    <label class="campo">
+      <span class="campo-etiqueta">Marca</span>
+      <input id="editar-marca" type="text">
+    </label>
+    <div class="formulario-acciones">
+      <button type="submit" class="btn btn-primario">Guardar</button>
+      <button type="button" id="btn-cerrar-dialogo" class="btn btn-plano">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialogo para resolver un pendiente del listado -->
+<dialog id="dialogo-revision">
+  <form id="form-revision" class="formulario">
+    <h2>Escanear el producto</h2>
+    <p class="ayuda" id="revision-detalle"></p>
+
+    <label class="campo">
+      <span class="campo-etiqueta">Codigo de barras del empaque *</span>
+      <input id="revision-codigo" type="text" required inputmode="numeric"
+             autocomplete="off" placeholder="Dispara el lector o escribelo">
+      <span id="revision-aviso" class="ayuda"></span>
+    </label>
+
+    <div class="formulario-acciones">
+      <button type="submit" class="btn btn-primario">Vincular a este SKU</button>
+      <button type="button" id="btn-cerrar-revision" class="btn btn-plano">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialogo de SKU: el dato que asigna compras -->
+<dialog id="dialogo-sku">
+  <form id="form-sku" class="formulario">
+    <h2 id="titulo-sku">Nuevo SKU</h2>
+    <label class="campo">
+      <span class="campo-etiqueta">SKU *</span>
+      <input id="sku-codigo-interno" type="text" required placeholder="SKU-00001" autocomplete="off">
+      <span class="ayuda">El codigo interno que asigna compras.</span>
+    </label>
+    <label class="campo">
+      <span class="campo-etiqueta">Nombre interno *</span>
+      <input id="sku-nombre" type="text" required placeholder="Harina de maiz blanco PAN 1 kg">
+      <span class="ayuda">El nombre de la empresa, no el del proveedor.</span>
+    </label>
+    <label class="campo">
+      <span class="campo-etiqueta">Categoria</span>
+      <input id="sku-categoria" type="text" list="lista-categorias-sku" placeholder="Alimentos">
+      <datalist id="lista-categorias-sku"></datalist>
+    </label>
+    <div class="formulario-acciones">
+      <button type="submit" class="btn btn-primario">Guardar</button>
+      <button type="button" id="btn-cerrar-sku" class="btn btn-plano">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialogo de vinculacion: un codigo nuevo que pertenece a un SKU -->
+<dialog id="dialogo-vincular">
+  <form id="form-vincular" class="formulario">
+    <h2>Vincular codigo a un SKU</h2>
+
+    <label class="campo">
+      <span class="campo-etiqueta">Codigo leido</span>
+      <input id="vinc-codigo" type="text" readonly>
+      <span id="vinc-info" class="ayuda"></span>
+    </label>
+
+    <div id="vinc-sugerencias"></div>
+
+    <label class="campo">
+      <span class="campo-etiqueta">SKU al que pertenece *</span>
+      <select id="vinc-sku" required></select>
+    </label>
+
+    <div id="vinc-nuevo" class="campo-anidado" hidden>
+      <label class="campo">
+        <span class="campo-etiqueta">SKU nuevo *</span>
+        <input id="vinc-nuevo-sku" type="text" autocomplete="off">
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Nombre interno *</span>
+        <input id="vinc-nuevo-nombre" type="text" placeholder="Nombre de la empresa, no del proveedor">
+      </label>
+    </div>
+
+    <div class="campo-fila">
+      <label class="campo">
+        <span class="campo-etiqueta">Nivel de empaque *</span>
+        <select id="vinc-nivel">
+          <option value="unidad">unidad</option>
+          <option value="display">display</option>
+          <option value="paca">paca</option>
+          <option value="caja">caja</option>
+          <option value="variable">medida variable</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Unidades que contiene *</span>
+        <input id="vinc-cantidad" type="number" min="1" step="1" value="1">
+        <span class="ayuda">Cuentalas al abrir el empaque.</span>
+      </label>
+    </div>
+
+    <div class="campo-fila">
+      <label class="campo">
+        <span class="campo-etiqueta">Proveedor</span>
+        <input id="vinc-proveedor" type="text" list="lista-proveedores" autocomplete="off" placeholder="Colombina">
+        <datalist id="lista-proveedores"></datalist>
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Nombre que le da el proveedor</span>
+        <input id="vinc-nombre-proveedor" type="text" placeholder="Como viene en la factura o la caja">
+      </label>
+    </div>
+    <p class="nota">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
+      </svg>
+      <span>El nombre del proveedor es solo referencia para reconocer la
+      factura. <strong>El codigo es la llave.</strong></span>
+    </p>
+
+    <div class="formulario-acciones">
+      <button type="submit" class="btn btn-primario">Vincular</button>
+      <button type="button" id="btn-cerrar-vincular" class="btn btn-plano">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/barcode.js"></script>
+<script src="js/db.js"></script>
+<script src="js/sku.js"></script>
+<script src="js/xlsx.js"></script>
+<script src="js/revision.js"></script>
+<script src="js/listado.js"></script>
+<script src="js/sincronizar.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
