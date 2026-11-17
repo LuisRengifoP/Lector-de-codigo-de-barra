@@ -297,11 +297,11 @@
 
 </section>
 
-<!-- ───────────── Vista: listado de precios del ERP ───────────── -->
+<!-- ───────────── Vista: listado de precios del DMS ───────────── -->
 <section id="vista-listado" class="vista" role="tabpanel" aria-label="Listado">
 
   <div class="titulo-vista">
-    <h2>Listado de precios del ERP</h2>
+    <h2>Listado de precios del DMS</h2>
     <p>Carga precios y empaques, y deja en cola lo que falta escanear</p>
   </div>
 
@@ -320,7 +320,7 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <path d="M12 3v12M8 11l4 4 4-4M4 20h16"/>
       </svg>
-      <span>Mejor el <strong>Excel (.xlsx)</strong> o el CSV del ERP. El texto
+      <span>Mejor el <strong>Excel (.xlsx)</strong> o el CSV del DMS. El texto
       del PDF pierde columnas y esas filas quedan en revision.</span>
     </p>
 
@@ -662,6 +662,12 @@
 
     <label class="campo">
       <span class="campo-etiqueta">SKU al que pertenece *</span>
+      <span class="buscar-en-select">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+        </svg>
+        <input id="vinc-sku-buscar" type="search" placeholder="Filtra: SKU, nombre..." autocomplete="off" aria-label="Filtrar SKU">
+      </span>
       <select id="vinc-sku" required></select>
     </label>
 

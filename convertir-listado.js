@@ -1,5 +1,5 @@
 /**
- * convertir-listado.js — Convierte el listado de precios del ERP en los dos
+ * convertir-listado.js — Convierte el listado de precios del DMS en los dos
  * archivos que necesita el sistema, sin abrir el navegador.
  *
  *   node convertir-listado.js <archivo> [--salida carpeta]
@@ -56,7 +56,7 @@ function textoDesdePdf(archivo) {
 `\nNo se pudo ejecutar pdftotext, que es lo que convierte el PDF en texto con
 columnas. Hay dos caminos:
 
-  1. Pedir el reporte exportado a CSV desde el ERP. Es el camino bueno: el PDF
+  1. Pedir el reporte exportado a CSV desde el DMS. Es el camino bueno: el PDF
      pierde las columnas de algunas filas y el CSV no.
   2. Instalar poppler (trae pdftotext). Git para Windows ya lo incluye en
      C:\\Program Files\\Git\\mingw64\\bin.
@@ -170,7 +170,7 @@ Filas:         ${r.total}
     paca                        ${r.pacas}
   Sin codigo en Alterna         ${r.sinCodigo}
   Codigo que no es un GTIN      ${r.invalidos}
-    de esos, relleno del ERP    ${r.derivadosDelSku}
+    de esos, relleno del DMS    ${r.derivadosDelSku}
     con un digito propuesto     ${r.conSugerencia}
   Filas incompletas en el texto ${r.incompletas}
 
@@ -208,7 +208,7 @@ codigo de barras puede no ser el de ese producto.
     console.log(
 `Aviso: ${r.incompletas} filas vinieron del PDF sin descripcion ni precios. No es
 un fallo del reporte, es el texto del PDF que pierde las columnas cuando la
-descripcion es larga. El CSV exportado del ERP no tiene ese problema.
+descripcion es larga. El CSV exportado del DMS no tiene ese problema.
 `);
   }
 }

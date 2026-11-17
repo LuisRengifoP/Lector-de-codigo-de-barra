@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "lector",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js", "8137", "--http"],
-      "port": 8137
+      "name": "static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8777"],
+      "port": 8777
     }
   ]
 }

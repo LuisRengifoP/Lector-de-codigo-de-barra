@@ -372,6 +372,18 @@ input[readonly] { background: var(--superficie-2); color: var(--texto-suave); }
 }
 .campo-buscar input { padding-left: 36px; }
 
+/* Mini buscador dentro de un select largo */
+.buscar-en-select { position: relative; display: block; margin-bottom: 6px; }
+.buscar-en-select svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-tenue);
+  pointer-events: none;
+}
+.buscar-en-select input { width: 100%; padding-left: 36px; }
+
 #entrada-codigo {
   font-variant-numeric: tabular-nums;
   letter-spacing: .05em;

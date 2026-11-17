@@ -39,7 +39,7 @@
       'dialogo-sku', 'form-sku', 'titulo-sku', 'sku-codigo-interno',
       'sku-nombre', 'sku-categoria', 'btn-cerrar-sku', 'lista-categorias-sku',
       'dialogo-vincular', 'form-vincular', 'vinc-codigo', 'vinc-info',
-      'vinc-sugerencias', 'vinc-sku', 'vinc-nuevo', 'vinc-nuevo-sku',
+      'vinc-sugerencias', 'vinc-sku', 'vinc-sku-buscar', 'vinc-nuevo', 'vinc-nuevo-sku',
       'vinc-nuevo-nombre', 'vinc-nivel', 'vinc-cantidad', 'vinc-proveedor',
       'vinc-nombre-proveedor', 'btn-cerrar-vincular', 'lista-proveedores',
       // Listado de precios del ERP y lo que deja pendiente.
@@ -365,7 +365,7 @@
   }
 
   /**
-   * Precio en pesos. Sin decimales: el listado del ERP no los trae y la
+   * Precio en pesos. Sin decimales: el listado del DMS no los trae y la
    * tienda no los cobra.
    */
   function dinero(valor) {
@@ -486,7 +486,7 @@
                 ? '<br><span class="ayuda">Sin IVA ' + escapar(dinero(s.precioSinIva)) + '</span>'
                 : '') + '</p>'
             : '<p class="ayuda">Este SKU no tiene precio cargado. ' +
-              'El precio entra con el listado de precios del ERP.</p>') +
+              'El precio entra con el listado de precios del DMS.</p>') +
           (e.nivel !== 'unidad' && e.cantidad >= 1
             ? '<p class="bloque-sku-cuenta">1 ' + escapar(e.nivel) + ' = <strong>' +
               e.cantidad + ' unidades</strong> de ' + escapar(s.sku) + '</p>'
@@ -585,7 +585,22 @@
                escapar(s.sku) + ' — ' + escapar(s.nombre) + '</option>';
       }).join('');
     el['vinc-sku'].value = seleccion && window.SKU.buscarSku(seleccion) ? seleccion : '__nuevo__';
+    el['vinc-sku-buscar'].value = '';
+    filtrarSelectSku();
     alternarSkuNuevo();
+  }
+
+  // Oculta las opciones que no casan con el texto tecleado, para no tener que
+  // desplazar una lista larga de SKU con el dedo. "__nuevo__" siempre visible.
+  function filtrarSelectSku() {
+    var q = el['vinc-sku-buscar'].value.trim().toLowerCase();
+    var opciones = el['vinc-sku'].options;
+    for (var i = 0; i < opciones.length; i++) {
+      var o = opciones[i];
+      var casa = o.value === '__nuevo__' || !q ||
+                 o.text.toLowerCase().indexOf(q) !== -1;
+      o.hidden = !casa;
+    }
   }
 
   function alternarSkuNuevo() {
@@ -739,7 +754,7 @@
   /**
    * Celda U/E (unidad de empaque): como viene el producto del proveedor.
    *
-   * El dato manda el listado del ERP, que trae la palabra de empaque y las
+   * El dato manda el listado del DMS, que trae la palabra de empaque y las
    * unidades que contiene (CAJ 24, PAC 1000). Cuando el listado no lo trajo,
    * sirve el empaque que alguien confirmo contandolo al escanear: es el mismo
    * dato, obtenido abriendo la caja.
@@ -1061,7 +1076,7 @@
 
   // ───────────────── Vista del listado de precios ─────────────────
   //
-  // El listado del ERP es la fuente del precio y del SKU. Se lee en dos pasos
+  // El listado del DMS es la fuente del precio y del SKU. Se lee en dos pasos
   // a proposito: primero se muestra que trae el archivo, despues se carga. Un
   // listado puede traer mal la columna de codigos, y eso hay que verlo antes
   // de escribir nada en la tabla.
@@ -1107,7 +1122,7 @@
             n.invalidos + ' filas traen en la columna Alterna un numero que no es un ' +
             'codigo de barras' +
             (n.derivadosDelSku
-              ? ', y ' + n.derivadosDelSku + ' de esas son relleno del ERP armado con el propio SKU'
+              ? ', y ' + n.derivadosDelSku + ' de esas son relleno del DMS armado con el propio SKU'
               : '') +
             '. No se guardan como codigo: van a la cola de pendientes.' +
           '</div>'
@@ -1133,7 +1148,7 @@
         ? '<div class="aviso">' +
             n.incompletas + ' filas vinieron sin descripcion ni precios. Si el archivo ' +
             'es el texto de un PDF, es el PDF que pierde las columnas cuando la ' +
-            'descripcion es larga; el CSV exportado del ERP no tiene ese problema.' +
+            'descripcion es larga; el CSV exportado del DMS no tiene ese problema.' +
           '</div>'
         : '') +
 
@@ -1458,6 +1473,7 @@
     el['form-vincular'].onsubmit = guardarVinculo;
     el['btn-cerrar-vincular'].onclick = function () { el['dialogo-vincular'].close(); };
     el['vinc-sku'].onchange = alternarSkuNuevo;
+    el['vinc-sku-buscar'].oninput = filtrarSelectSku;
     el['vinc-codigo'].oninput = informarCodigoVinculo;
     el['vinc-codigo'].addEventListener('keydown', function (e) {
       // El escaner USB manda Enter al final. Aqui ese Enter no envia el
