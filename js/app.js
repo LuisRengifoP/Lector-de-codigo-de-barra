@@ -1,39 +1,65 @@
 /**
- * app.js — Orquesta la interfaz: entrada del codigo, consulta a la base,
- * presentacion del nombre del producto, alta de productos nuevos,
- * administracion de la base e historial.
+ * app.js — Orquesta la interfaz: entrada del código, consulta a la base,
+ * presentación del nombre del producto, alta de productos nuevos,
+ * administración de la base e historial.
  */
 (function () {
   'use strict';
 
   var el = {};
-  // Peso colombiano: sin decimales, separador de miles con punto.
   var moneda = new Intl.NumberFormat('es-CO', {
     style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0
   });
   var fecha = new Intl.DateTimeFormat('es', { dateStyle: 'short', timeStyle: 'medium' });
   var codigoEnCurso = '';
 
+  // Estado de filtros rápidos por vista (puramente de presentación).
+  var filtroSku = 'todos';
+  var filtroRevision = 'todos';
+  var filtroProducto = 'todos';
+  var filtroHistorial = 'todos';
+
   // Un paginador por tabla. Se crean en iniciar(), cuando ya existe el DOM.
   var pagProductos, pagSkus, pagRevision, pagHistorial;
+
+  var ICONOS = {
+    ok: '<svg class="aviso-icono" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>',
+    error: '<svg class="aviso-icono" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    info: '<svg class="aviso-icono" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>',
+    cerrar: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    copiar: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    recargar: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>',
+    editar: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    borrar: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+    mas: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    escaner: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M11 8v8M15 8v8"/></svg>',
+    caja: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>',
+    camara: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    detener: '<rect x="6" y="6" width="12" height="12" rx="2"/>'
+  };
 
   function $(id) { return document.getElementById(id); }
 
   function cachearElementos() {
     [
-      'entrada-codigo', 'btn-buscar', 'btn-camara', 'camara-envoltorio', 'video',
-      'aviso-camara', 'estado-escaner', 'resultado', 'panel-alta',
-      'form-alta', 'alta-codigo', 'alta-nombre', 'alta-categoria',
-      'btn-cancelar-alta', 'lista-categorias',
+      'entrada-codigo', 'btn-limpiar-codigo', 'btn-buscar', 'btn-camara',
+      'btn-camara-icono', 'btn-camara-texto', 'camara-envoltorio', 'video',
+      'aviso-camara', 'estado-escaner', 'panel-resultado', 'resultado',
+      'resultado-codigo-badge', 'panel-alta', 'form-alta', 'alta-codigo',
+      'alta-nombre', 'alta-categoria', 'btn-cancelar-alta', 'lista-categorias',
       'metricas', 'cuerpo-productos', 'busqueda-productos', 'sin-productos',
+      'filtros-productos', 'btn-limpiar-filtros-productos',
       'btn-nuevo', 'btn-exportar-json', 'btn-exportar-csv', 'entrada-importar',
       'btn-vaciar', 'cuerpo-historial', 'sin-historial', 'btn-limpiar-historial',
-      'estado-fuentes', 'estado-tabla',
+      'busqueda-historial', 'filtros-historial',
+      'estado-fuentes', 'estado-tabla', 'indicador-red',
+      'badge-skus', 'badge-pendientes',
       'dialogo-editar', 'form-editar', 'editar-codigo', 'editar-nombre',
       'editar-categoria', 'editar-marca', 'btn-cerrar-dialogo',
       'titulo-editar', 'editar-codigo-aviso', 'avisos',
       // Tabla de SKU: dato propio de la empresa.
       'bloque-sku', 'metricas-sku', 'cuerpo-skus', 'busqueda-skus', 'sin-skus',
+      'filtros-skus', 'btn-limpiar-filtros-sku',
       'btn-sku-nuevo', 'btn-sku-exportar-csv', 'btn-sku-exportar-json',
       'entrada-importar-sku', 'btn-sku-vaciar',
       'dialogo-sku', 'form-sku', 'titulo-sku', 'sku-codigo-interno',
@@ -43,9 +69,10 @@
       'vinc-nuevo-nombre', 'vinc-nivel', 'vinc-cantidad', 'vinc-proveedor',
       'vinc-nombre-proveedor', 'btn-cerrar-vincular', 'lista-proveedores',
       // Listado de precios del ERP y lo que deja pendiente.
-      'entrada-listado', 'btn-listado-pegar', 'btn-listado-leer',
+      'zona-listado', 'entrada-listado', 'btn-listado-pegar', 'btn-listado-leer',
       'campo-listado-texto', 'listado-texto', 'resumen-listado',
       'metricas-revision', 'cuerpo-revision', 'busqueda-revision', 'sin-revision',
+      'filtros-revision', 'btn-limpiar-filtros-revision',
       'btn-revision-csv', 'btn-revision-vaciar',
       'dialogo-revision', 'form-revision', 'revision-codigo', 'revision-detalle',
       'revision-aviso', 'btn-cerrar-revision'
@@ -65,14 +92,47 @@
   function avisar(mensaje, clase) {
     var div = document.createElement('div');
     div.className = 'aviso' + (clase ? ' aviso-' + clase : '');
-    div.textContent = mensaje;
+    var icono = clase === 'ok' ? ICONOS.ok : (clase === 'error' ? ICONOS.error : ICONOS.info);
+    div.innerHTML =
+      icono +
+      '<span class="aviso-texto">' + escapar(mensaje) + '</span>' +
+      '<button type="button" class="aviso-cerrar" aria-label="Cerrar aviso">' + ICONOS.cerrar + '</button>';
+
+    var cerrado = false;
+    function cerrar() {
+      if (cerrado) return;
+      cerrado = true;
+      div.classList.add('aviso-saliendo');
+      setTimeout(function () { div.remove(); }, 180);
+    }
+
+    div.querySelector('.aviso-cerrar').onclick = cerrar;
     el['avisos'].appendChild(div);
-    setTimeout(function () { div.remove(); }, 3600);
+    setTimeout(cerrar, 3800);
   }
 
   function estado(texto, clase) {
     el['estado-escaner'].textContent = texto;
     el['estado-escaner'].className = 'pildora' + (clase ? ' pildora-' + clase : '');
+  }
+
+  function pulsarResultado(tipo) {
+    var panel = el['panel-resultado'];
+    if (!panel) return;
+    panel.classList.remove('pulso-ok', 'pulso-aviso', 'pulso-error');
+    void panel.offsetWidth; // reinicia animación CSS
+    if (tipo) panel.classList.add('pulso-' + tipo);
+  }
+
+  function botonCopiar(valor, etiqueta) {
+    return '<button type="button" class="btn-copiar" data-copiar="' + escapar(valor) +
+           '" title="Copiar ' + escapar(etiqueta || valor) + '">' +
+           '<span>' + escapar(valor) + '</span>' + ICONOS.copiar + '</button>';
+  }
+
+  function actualizarLimpiarCodigo() {
+    if (!el['btn-limpiar-codigo']) return;
+    el['btn-limpiar-codigo'].classList.toggle('oculto', !el['entrada-codigo'].value);
   }
 
   function descargar(nombreArchivo, contenido, tipo) {
@@ -90,22 +150,30 @@
   // ───────────────── Flujo principal: leer y mostrar ─────────────────
 
   /**
-   * Punto unico de entrada: toda lectura (camara, USB, manual) pasa por aqui.
-   *
-   * Orden: validar el codigo, mirar la cache local, y si no esta, consultar en
-   * linea a traves del servidor. El usuario no registra nada; el nombre llega
-   * de la fuente y se memoriza solo.
+   * Punto único de entrada: toda lectura (cámara, USB, manual) pasa por aquí.
    */
   function procesarCodigo(entrada, fuente) {
     var validacion = window.Barcode.validar(entrada);
     codigoEnCurso = validacion.codigo;
     el['panel-alta'].hidden = true;
     el['bloque-sku'].innerHTML = '';
+    el['bloque-sku'].className = '';
+    actualizarLimpiarCodigo();
+
+    if (el['resultado-codigo-badge']) {
+      if (validacion.codigo) {
+        el['resultado-codigo-badge'].textContent = validacion.codigo;
+        el['resultado-codigo-badge'].classList.remove('oculto');
+      } else {
+        el['resultado-codigo-badge'].classList.add('oculto');
+      }
+    }
 
     if (!validacion.valido) {
       window.Scanner.pitar(false);
       mostrarFallo(validacion);
-      estado('Codigo invalido', 'error');
+      estado('Código inválido', 'error');
+      pulsarResultado('error');
       window.DB.registrarLectura({
         codigo: validacion.codigo, encontrado: false, valido: false, fuente: fuente
       });
@@ -114,17 +182,15 @@
       return;
     }
 
-    // El bloque de SKU se pinta ya: el SKU, el nombre interno y el precio son
-    // datos de la empresa, estan en esta maquina y no dependen de internet.
-    // Esperar la consulta en linea para mostrarlos dejaria la caja en blanco
-    // varios segundos, o para siempre si no hay red.
+    // El bloque de SKU se pinta de inmediato: el dato propio no depende de red.
     pintarBloqueSku(validacion);
 
     var enCache = window.DB.buscar(validacion.codigo);
     if (enCache) {
       window.Scanner.pitar(true);
       mostrarProducto(enCache, validacion, fuente, true);
-      estado('Encontrado en cache', 'ok');
+      estado('Encontrado en caché', 'ok');
+      pulsarResultado('ok');
       window.DB.registrarLectura({
         codigo: validacion.codigo, nombre: enCache.nombre, encontrado: true, fuente: fuente
       });
@@ -133,16 +199,17 @@
       return;
     }
 
-    // No esta en cache: se consulta en linea.
+    // No está en caché: se consulta en línea.
     mostrarConsultando(validacion);
-    estado('Consultando...', 'activa');
+    estado('Consultando…', 'activa');
 
     window.DB.consultarEnLinea(validacion.codigo).then(function (r) {
       if (r.ok && r.producto) {
         var guardado = window.DB.guardarEnCache(validacion.codigo, r.producto);
         window.Scanner.pitar(true);
         mostrarProducto(guardado, validacion, fuente, false, r);
-          estado('Producto identificado', 'ok');
+        estado('Producto identificado', 'ok');
+        pulsarResultado('ok');
         window.DB.registrarLectura({
           codigo: validacion.codigo, nombre: guardado.nombre, encontrado: true,
           fuente: fuente + ' / ' + r.producto.fuente
@@ -151,7 +218,9 @@
       } else {
         window.Scanner.pitar(false);
         mostrarSinResultado(validacion, r);
-          estado('Sin resultado', 'aviso');
+        var tieneSku = !!window.SKU.buscarPorCodigo(validacion.codigo);
+        estado(tieneSku ? 'Identificado en SKU' : 'Sin resultado en línea', tieneSku ? 'ok' : 'aviso');
+        pulsarResultado(tieneSku ? 'ok' : 'aviso');
         window.DB.registrarLectura({
           codigo: validacion.codigo, encontrado: false, valido: true, fuente: fuente
         });
@@ -161,7 +230,6 @@
     });
   }
 
-  /** Texto seleccionado: el siguiente disparo del escaner lo reemplaza, no lo concatena. */
   function seleccionarCampo() {
     if (document.activeElement === el['entrada-codigo']) el['entrada-codigo'].select();
   }
@@ -173,7 +241,7 @@
         '<div class="girador" aria-hidden="true"></div>' +
         '<div>' +
           '<strong>Consultando ' + escapar(validacion.codigo) + '</strong>' +
-          '<p class="ayuda">Buscando el nombre en las fuentes en linea...</p>' +
+          '<p class="ayuda">Buscando el nombre en las fuentes en línea…</p>' +
         '</div>' +
       '</div>';
   }
@@ -182,29 +250,32 @@
     var origen = window.Barcode.origenGs1(p.codigo);
     var pildoraFuente = p.oficial ? 'pildora-ok' : 'pildora';
 
-    el['resultado'].className = '';
+    el['resultado'].className = 'hallazgo-bloque';
     el['resultado'].innerHTML =
       '<div class="hallazgo-cabecera">' +
+        '<span class="hallazgo-etiqueta-bloque">Catálogo en línea</span>' +
         '<h3 class="hallazgo-nombre">' + escapar(p.nombre) + '</h3>' +
         (p.marca ? '<p class="hallazgo-marca">' + escapar(p.marca) + '</p>' : '') +
-        '<span class="pildora pildora-ok">' + escapar(validacion.tipo.nombre) + '</span> ' +
-        '<span class="pildora ' + pildoraFuente + '">' + escapar(p.origen) + '</span> ' +
-        (deCache ? '<span class="pildora">cache local</span>' : '') +
+        '<div class="hallazgo-pildoras">' +
+          '<span class="pildora pildora-ok">' + escapar(validacion.tipo.nombre) + '</span>' +
+          '<span class="pildora ' + pildoraFuente + '">' + escapar(p.origen) + '</span>' +
+          (deCache ? '<span class="pildora">caché local</span>' : '') +
+        '</div>' +
       '</div>' +
       '<dl class="hallazgo-datos">' +
-        dato('Codigo', p.codigo, true) +
+        '<div><dt class="dato-clave">Código</dt><dd class="dato-valor mono" style="margin:0">' +
+          botonCopiar(p.codigo, 'código') + '</dd></div>' +
         (p.empresa ? dato('Empresa titular', p.empresa) : '') +
-        dato('Categoria', p.categoria) +
+        dato('Categoría', p.categoria) +
         (origen ? dato('Origen GS1', origen) : '') +
       '</dl>' +
       (respuesta && respuesta.intentos ? detalleIntentos(respuesta.intentos) : '') +
       '<div class="hallazgo-acciones">' +
-        '<button class="btn btn-secundario btn-pequeno" data-accion="recargar">Volver a consultar</button>' +
-        '<button class="btn btn-secundario btn-pequeno" data-accion="editar">Corregir nombre</button>' +
+        '<button type="button" class="btn btn-secundario btn-pequeno" data-accion="recargar">' + ICONOS.recargar + ' Volver a consultar</button>' +
+        '<button type="button" class="btn btn-secundario btn-pequeno" data-accion="editar">' + ICONOS.editar + ' Corregir nombre</button>' +
       '</div>';
 
     el['resultado'].querySelector('[data-accion="recargar"]').onclick = function () {
-      // Se descarta lo memorizado de ese codigo y se vuelve a preguntar a las fuentes.
       window.DB.eliminar(p.codigo);
       refrescarProductos();
       procesarCodigo(p.codigo, 'reconsulta');
@@ -214,11 +285,10 @@
     };
   }
 
-  /** Lista plegable de que respondio cada fuente. Util para entender la cobertura. */
   function detalleIntentos(intentos) {
     if (!intentos.length) return '';
     return '<details class="intentos">' +
-      '<summary>Que respondio cada fuente</summary>' +
+      '<summary>Qué respondió cada fuente</summary>' +
       '<ul>' + intentos.map(function (i) {
         return '<li><strong>' + escapar(i.fuente) + ':</strong> ' + escapar(i.estado) +
                (i.detalle ? ' (' + escapar(i.detalle) + ')' : '') + '</li>';
@@ -227,31 +297,28 @@
 
   function mostrarSinResultado(validacion, respuesta) {
     var origen = window.Barcode.origenGs1(validacion.codigo);
-    // Un codigo de caja casi nunca esta en las fuentes publicas: ahi se
-    // publica la unidad que compra el consumidor. Si la tabla de SKU ya lo
-    // tiene, el producto esta identificado y no falta ningun nombre.
     var enSku = window.SKU.buscarPorCodigo(validacion.codigo);
 
     el['resultado'].className = '';
     el['resultado'].innerHTML =
       '<div class="fallo">' +
-        '<strong>Ninguna fuente en linea tiene este codigo</strong>' +
-        '<span>Codigo leido: <code>' + escapar(validacion.codigo) + '</code> (' +
+        '<strong>Ninguna fuente en línea tiene este código</strong>' +
+        '<span>Código leído: <code>' + escapar(validacion.codigo) + '</code> (' +
         escapar(validacion.tipo.nombre) + ')</span>' +
         (origen ? '<span>Prefijo GS1: ' + escapar(origen) + '</span>' : '') +
         (respuesta && respuesta.error ? '<span>' + escapar(respuesta.error) + '</span>' : '') +
         '<span>' + (enSku
           ? 'No hace falta: tu tabla de SKU ya lo identifica, y ese dato manda ' +
             'sobre cualquier fuente externa.'
-          : 'El codigo es valido y existe, pero no esta publicado en las fuentes ' +
-            'consultadas. Puedes ponerle nombre tu mismo: queda guardado y la ' +
-            'proxima lectura lo muestra.') + '</span>' +
+          : 'El código es válido y existe, pero no está publicado en las fuentes ' +
+            'consultadas. Puedes ponerle nombre tú mismo: queda guardado y la ' +
+            'próxima lectura lo muestra.') + '</span>' +
       '</div>' +
       (respuesta && respuesta.intentos ? detalleIntentos(respuesta.intentos) : '') +
-      '<div class="hallazgo-acciones">' +
+      '<div class="hallazgo-acciones" style="margin-top:10px">' +
         (enSku ? '' :
-          '<button class="btn btn-secundario btn-pequeno" data-accion="nombrar">Ponerle nombre</button>') +
-        '<button class="btn btn-plano btn-pequeno" data-accion="reintentar">Reintentar</button>' +
+          '<button type="button" class="btn btn-primario btn-pequeno" data-accion="nombrar">' + ICONOS.editar + ' Ponerle nombre</button>') +
+        '<button type="button" class="btn btn-secundario btn-pequeno" data-accion="reintentar">' + ICONOS.recargar + ' Reintentar</button>' +
       '</div>';
 
     var botonNombrar = el['resultado'].querySelector('[data-accion="nombrar"]');
@@ -269,16 +336,15 @@
            escapar(valor) + '</dd></div>';
   }
 
-  /** Lectura que ni siquiera supera el digito verificador: no se consulta nada. */
   function mostrarFallo(validacion) {
     el['resultado'].className = '';
     el['resultado'].innerHTML =
       '<div class="fallo es-error">' +
-        '<strong>Lectura invalida</strong>' +
-        '<span>Codigo leido: <code>' + escapar(validacion.codigo || '(vacio)') + '</code> ' +
+        '<strong>Lectura inválida</strong>' +
+        '<span>Código leído: <code>' + escapar(validacion.codigo || '(vacío)') + '</code> ' +
         '(' + escapar(validacion.tipo.nombre) + ')</span>' +
         '<span>' + escapar(validacion.motivo) +
-        '. Vuelve a escanear; si el codigo esta danado, escribelo a mano.</span>' +
+        '. Vuelve a escanear; si el código está dañado, escríbelo a mano.</span>' +
       '</div>';
   }
 
@@ -297,6 +363,9 @@
     el['alta-codigo'].value = codigo;
     el['alta-nombre'].value = '';
     el['alta-categoria'].value = '';
+    if (typeof el['panel-alta'].scrollIntoView === 'function') {
+      el['panel-alta'].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     el['alta-nombre'].focus();
   }
 
@@ -313,12 +382,28 @@
     el['panel-alta'].hidden = true;
     refrescarProductos();
     procesarCodigo(r.producto.codigo, 'nombre propio');
-    // El foco vuelve al campo para encadenar la siguiente lectura sin usar el raton.
     el['entrada-codigo'].focus();
     el['entrada-codigo'].select();
   }
 
   // ───────────────── Vista de productos ─────────────────
+
+  function aplicarFiltroProductos(lista) {
+    if (filtroProducto === 'oficial') {
+      return lista.filter(function (p) { return !!p.oficial; });
+    }
+    if (filtroProducto === 'en-linea') {
+      return lista.filter(function (p) {
+        return !p.oficial && p.origen !== 'manual' && p.origen !== 'editado';
+      });
+    }
+    if (filtroProducto === 'manual') {
+      return lista.filter(function (p) {
+        return p.origen === 'manual' || p.origen === 'editado';
+      });
+    }
+    return lista;
+  }
 
   function refrescarProductos() {
     var todos = window.DB.todos();
@@ -328,46 +413,51 @@
     var oficiales = todos.filter(function (p) { return p.oficial; }).length;
 
     el['metricas'].innerHTML =
-      metrica(todos.length, 'En cache') +
-      metrica(deFuente, 'Identificados en linea') +
+      metrica(todos.length, 'En caché') +
+      metrica(deFuente, 'Identificados en línea', 'ok') +
       metrica(oficiales, 'Desde GS1 oficial') +
       metrica(todos.length - deFuente, 'Nombrados a mano');
 
-    var lista = window.DB.buscarTexto(el['busqueda-productos'].value);
+    var consulta = el['busqueda-productos'].value;
+    var lista = aplicarFiltroProductos(window.DB.buscarTexto(consulta));
     lista.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
 
-    // Solo la pagina que se esta mirando. Con la cache llena, pintar miles de
-    // filas tarda mas que la consulta en linea que las lleno.
     var pagina = pagProductos.recortar(lista);
 
     el['cuerpo-productos'].innerHTML = pagina.map(function (p) {
       return '<tr>' +
-        '<td class="mono" data-etiqueta="Codigo">' + escapar(p.codigo) + '</td>' +
+        '<td class="mono" data-etiqueta="Código">' + botonCopiar(p.codigo, 'código') + '</td>' +
         '<td class="celda-principal" data-etiqueta="Nombre">' + escapar(p.nombre) +
           (p.marca ? '<br><span class="ayuda">' + escapar(p.marca) + '</span>' : '') + '</td>' +
-        '<td class="col-media" data-etiqueta="Categoria">' + escapar(p.categoria) + '</td>' +
+        '<td class="col-media" data-etiqueta="Categoría">' + escapar(p.categoria) + '</td>' +
         '<td class="col-baja" data-etiqueta="Fuente"><span class="pildora' +
           (p.oficial ? ' pildora-ok' : '') + '">' + escapar(p.origen) + '</span></td>' +
         '<td class="num celda-acciones"><div class="tabla-acciones">' +
-          '<button class="btn btn-secundario btn-pequeno" data-editar="' + escapar(p.codigo) + '">Editar</button>' +
-          '<button class="btn btn-peligro btn-pequeno" data-borrar="' + escapar(p.codigo) + '">Borrar</button>' +
+          '<button type="button" class="btn btn-plano btn-pequeno" data-consultar="' + escapar(p.codigo) + '" title="Ver en el escáner">' + ICONOS.escaner + ' Ver</button>' +
+          '<button type="button" class="btn btn-secundario btn-pequeno" data-editar="' + escapar(p.codigo) + '">' + ICONOS.editar + ' Editar</button>' +
+          '<button type="button" class="btn btn-peligro-suave btn-pequeno" data-borrar="' + escapar(p.codigo) + '" title="Borrar producto">' + ICONOS.borrar + '</button>' +
         '</div></td>' +
       '</tr>';
     }).join('');
 
     pagProductos.pintar();
     el['sin-productos'].classList.toggle('oculto', lista.length > 0);
+    var hayFiltro = !!(consulta.trim() || filtroProducto !== 'todos');
+    var msgProd = el['sin-productos'].querySelector('p');
+    if (msgProd) {
+      msgProd.textContent = todos.length === 0
+        ? 'Todavía no hay productos en caché. Aparecen aquí al consultar códigos en el escáner o agregarlos a mano.'
+        : 'Ningún producto coincide con el filtro o la búsqueda.';
+    }
+    if (el['btn-limpiar-filtros-productos']) {
+      el['btn-limpiar-filtros-productos'].classList.toggle('oculto', !hayFiltro || !todos.length);
+    }
 
     el['lista-categorias'].innerHTML = window.DB.categorias().map(function (c) {
       return '<option value="' + escapar(c) + '">';
     }).join('');
-
   }
 
-  /**
-   * Precio en pesos. Sin decimales: el listado del DMS no los trae y la
-   * tienda no los cobra.
-   */
   function dinero(valor) {
     if (valor === null || valor === undefined || valor === '') return '';
     var n = Number(valor);
@@ -376,9 +466,8 @@
   }
 
   /**
-   * Dice de donde sale la tabla que se esta usando. Importa verlo: si el
-   * servidor no responde, esta caja sigue funcionando con su copia, pero lo
-   * que se registre aqui no lo ve nadie mas hasta que vuelva.
+   * Actualiza los indicadores globales de sincronización y conteo en el header
+   * y en las barras de estado de la vista Escanear.
    */
   function pintarEstadoTabla() {
     var s = window.Sincronizar;
@@ -386,10 +475,31 @@
     var pendientes = window.Revision.todos().length;
     var resumen = e.skus + ' SKU y ' + pendientes + ' pendientes';
 
+    if (el['badge-skus']) {
+      el['badge-skus'].textContent = e.skus > 0 ? String(e.skus) : '';
+      el['badge-skus'].classList.toggle('oculto', e.skus === 0);
+    }
+    if (el['badge-pendientes']) {
+      el['badge-pendientes'].textContent = pendientes > 0 ? String(pendientes) : '';
+      el['badge-pendientes'].classList.toggle('oculto', pendientes === 0);
+    }
+
+    if (el['indicador-red']) {
+      var textoRed = s.modo === 'servidor'
+        ? 'Tabla compartida'
+        : (s.modo === 'sin-conexion' ? 'Sin servidor' : 'Solo este equipo');
+      var claseRed = s.modo === 'servidor'
+        ? 'pildora-ok'
+        : (s.modo === 'sin-conexion' ? 'pildora-aviso' : '');
+      el['indicador-red'].className = 'pildora indicador-red' + (claseRed ? ' ' + claseRed : '');
+      el['indicador-red'].title = textoRed + ' — ' + resumen;
+      el['indicador-red'].innerHTML = '<span class="indicador-red-texto">' + escapar(textoRed) + '</span>';
+    }
+
     if (s.modo === 'servidor') {
       el['estado-tabla'].innerHTML =
         '<span class="pildora pildora-ok">Tabla compartida</span> ' +
-        resumen + ', del servidor. Lo que registres aqui lo ven las demas cajas.';
+        resumen + ', del servidor. Lo que registres aquí lo ven las demás cajas.';
       return;
     }
 
@@ -408,19 +518,14 @@
       '. Arranca <code>node server.js</code> para compartir la tabla entre varias cajas.';
   }
 
-  function metrica(valor, clave) {
-    return '<div class="metrica"><div class="metrica-valor">' + escapar(String(valor)) +
-           '</div><div class="metrica-clave">' + escapar(clave) + '</div></div>';
+  function metrica(valor, clave, variante) {
+    return '<div class="metrica' + (variante ? ' metrica-' + variante : '') + '">' +
+           '<div class="metrica-valor">' + escapar(String(valor)) + '</div>' +
+           '<div class="metrica-clave">' + escapar(clave) + '</div></div>';
   }
 
-  // ───────────────── Verificacion contra la tabla de SKU ─────────────────
-  //
-  // El nombre que devuelven las fuentes en linea sirve para saber *que* es el
-  // producto. No dice a que SKU de la empresa pertenece, ni cuantas unidades
-  // trae la caja. Eso sale de la tabla de SKU, y es lo que hace falta para
-  // recibir mercancia.
+  // ───────────────── Verificación contra la tabla de SKU ─────────────────
 
-  /** Resumen legible de un empaque: "caja de 24 unidades". */
   function textoEmpaque(entrada) {
     if (entrada.nivel === 'variable') return 'medida variable';
     if (entrada.nivel === 'unidad') return 'unidad';
@@ -428,25 +533,21 @@
     return entrada.nivel + ' (cantidad sin confirmar)';
   }
 
-  /** Los demas codigos del mismo SKU: la unidad cuando leiste la caja, y al reves. */
   function otrosCodigos(s, entradaActual) {
     var otros = s.codigos.filter(function (c) { return c !== entradaActual; });
     if (!otros.length) return '';
-    return '<p class="ayuda">Otros codigos de este SKU: ' +
+    return '<p class="ayuda">Otros códigos de este SKU: ' +
       otros.map(function (c) {
         return '<code>' + escapar(c.codigo) + '</code> (' + escapar(textoEmpaque(c)) + ')';
       }).join(', ') + '</p>';
   }
 
-  /**
-   * Dice a que SKU pertenece el codigo leido, o avisa que no esta vinculado.
-   *
-   * Un codigo sin vincular no es un error del lector: es una caja que nadie
-   * habia registrado todavia. Es el caso normal cuando llega un proveedor
-   * nuevo, y se resuelve vinculandolo a un SKU que ya existe.
-   */
   function pintarBloqueSku(validacion) {
-    if (!validacion || !validacion.valido) { el['bloque-sku'].innerHTML = ''; return; }
+    if (!validacion || !validacion.valido) {
+      el['bloque-sku'].innerHTML = '';
+      el['bloque-sku'].className = '';
+      return;
+    }
 
     var codigo = validacion.codigo;
     var hallado = window.SKU.buscarPorCodigo(codigo);
@@ -456,6 +557,7 @@
       var e = hallado.entrada;
       var faltaCantidad = e.nivel !== 'unidad' && e.nivel !== 'variable' && e.cantidad < 1;
 
+      el['bloque-sku'].className = 'tiene-sku';
       el['bloque-sku'].innerHTML =
         '<div class="bloque-sku">' +
           '<div class="bloque-sku-pildoras">' +
@@ -471,12 +573,10 @@
                   : '<span class="pildora pildora-ok">' + e.cantidad + ' u por empaque</span>')) +
           '</div>' +
           '<strong class="bloque-sku-nombre">' + escapar(s.nombre) + '</strong>' +
-          // El precio es lo primero que se mira en tienda, asi que va en
-          // grande y arriba de los datos de empaque.
           (s.precioCuadra === false
             ? '<p class="ayuda">El precio del listado no sale de multiplicar el precio ' +
               'unitario por el descuento y el IVA. En cigarrillos y algunas bebidas eso ' +
-              'es el impuesto al consumo; en el resto, la fila venia corrida y conviene ' +
+              'es el impuesto al consumo; en el resto, la fila venía corrida y conviene ' +
               'confirmar el precio antes de cobrarlo.</p>'
             : '') +
           (s.precio !== null
@@ -488,8 +588,8 @@
             : '<p class="ayuda">Este SKU no tiene precio cargado. ' +
               'El precio entra con el listado de precios del DMS.</p>') +
           (e.nivel !== 'unidad' && e.cantidad >= 1
-            ? '<p class="bloque-sku-cuenta">1 ' + escapar(e.nivel) + ' = <strong>' +
-              e.cantidad + ' unidades</strong> de ' + escapar(s.sku) + '</p>'
+            ? '<p class="bloque-sku-cuenta">' + ICONOS.caja + ' <span>1 ' + escapar(e.nivel) + ' = <strong>' +
+              e.cantidad + ' unidades</strong> de ' + escapar(s.sku) + '</span></p>'
             : '') +
           (s.empaque && s.unidadesPorCaja
             ? '<p class="ayuda">Del proveedor viene en ' + escapar(s.empaque) +
@@ -497,8 +597,8 @@
               (s.cajas !== null ? ', hay ' + s.cajas + ' en existencia' : '') + '.</p>'
             : '') +
           (faltaCantidad
-            ? '<p class="ayuda">Falta contar cuantas unidades trae este empaque. ' +
-              'Sin ese numero una caja recibida no se puede convertir en unidades.</p>'
+            ? '<p class="ayuda">Falta contar cuántas unidades trae este empaque. ' +
+              'Sin ese número una caja recibida no se puede convertir en unidades.</p>'
             : '') +
           (e.nombreProveedor
             ? '<p class="ayuda">El proveedor lo llama <em>' + escapar(e.nombreProveedor) + '</em>' +
@@ -506,8 +606,8 @@
             : '') +
           otrosCodigos(s, e) +
           '<div class="hallazgo-acciones">' +
-            '<button class="btn btn-secundario btn-pequeno" data-accion="corregir-vinculo">Corregir este vinculo</button>' +
-            '<button class="btn btn-secundario btn-pequeno" data-accion="ver-sku">Ver el SKU</button>' +
+            '<button type="button" class="btn btn-secundario btn-pequeno" data-accion="corregir-vinculo">' + ICONOS.editar + ' Corregir este vínculo</button>' +
+            '<button type="button" class="btn btn-secundario btn-pequeno" data-accion="ver-sku">' + ICONOS.caja + ' Ver el SKU</button>' +
           '</div>' +
         '</div>';
 
@@ -516,49 +616,50 @@
       };
       el['bloque-sku'].querySelector('[data-accion="ver-sku"]').onclick = function () {
         cambiarVista('skus');
+        filtroSku = 'todos';
+        sincronizarChipsFiltro(el['filtros-skus'], 'data-filtro-sku', 'todos');
         el['busqueda-skus'].value = s.sku;
+        pagSkus.reiniciar();
         refrescarSkus();
       };
       return;
     }
 
-    // Sin vincular. Se proponen los SKU que comparten los 12 digitos base del
-    // GTIN: es como la norma relaciona la caja con la unidad. Es una propuesta
-    // para confirmar a mano, no un vinculo automatico.
     var cands = window.SKU.candidatos(codigo);
     var nivel = window.Barcode.nivelProbable(codigo);
     var unidadDerivada = window.Barcode.gtin13DesdeGtin14(codigo);
 
+    el['bloque-sku'].className = '';
     el['bloque-sku'].innerHTML =
       '<div class="bloque-sku es-aviso">' +
         '<div class="bloque-sku-pildoras">' +
           '<span class="pildora pildora-aviso">Sin SKU</span>' +
           '<span class="pildora">parece ' + escapar(nivel) + '</span>' +
         '</div>' +
-        '<strong class="bloque-sku-nombre">Este codigo no esta vinculado a ningun SKU</strong>' +
+        '<strong class="bloque-sku-nombre">Este código no está vinculado a ningún SKU</strong>' +
         '<p class="ayuda">' +
           (nivel === 'caja'
-            ? 'Tiene 14 digitos con digito indicador ' + escapar(window.Barcode.indicador(codigo)) +
-              ': es un codigo de caja. El codigo de la unidad que le corresponde por norma seria ' +
+            ? 'Tiene 14 dígitos con dígito indicador ' + escapar(window.Barcode.indicador(codigo)) +
+              ': es un código de caja. El código de la unidad que le corresponde por norma sería ' +
               '<code>' + escapar(unidadDerivada) + '</code>, pero hay proveedores que no la respetan.'
-            : 'Vinculalo al SKU que compras ya registro. Si el producto es nuevo, crea el SKU aqui mismo.') +
+            : 'Vincúlalo al SKU que compras ya registró. Si el producto es nuevo, crea el SKU aquí mismo.') +
         '</p>' +
         (cands.length
           ? '<div class="sugerencias">' +
-              '<p class="campo-etiqueta">Comparte los 12 digitos base con:</p>' +
+              '<p class="campo-etiqueta">Comparte los 12 dígitos base con:</p>' +
               cands.map(function (c, i) {
                 return '<div class="sugerencia">' +
                   '<div><strong>' + escapar(c.sku.sku) + '</strong> ' + escapar(c.sku.nombre) +
                   '<br><span class="ayuda">por <code>' + escapar(c.porCodigo.codigo) + '</code> (' +
                   escapar(textoEmpaque(c.porCodigo)) + ')</span></div>' +
-                  '<button class="btn btn-primario btn-pequeno" data-sugerencia="' + i + '">Vincular aqui</button>' +
+                  '<button type="button" class="btn btn-primario btn-pequeno" data-sugerencia="' + i + '">Vincular aquí</button>' +
                   '</div>';
               }).join('') +
             '</div>'
           : '') +
         '<div class="hallazgo-acciones">' +
-          '<button class="btn ' + (cands.length ? 'btn-secundario' : 'btn-primario') +
-            ' btn-pequeno" data-accion="vincular">Vincular a un SKU</button>' +
+          '<button type="button" class="btn ' + (cands.length ? 'btn-secundario' : 'btn-primario') +
+            ' btn-pequeno" data-accion="vincular">' + ICONOS.mas + ' Vincular a un SKU</button>' +
         '</div>' +
       '</div>';
 
@@ -572,7 +673,7 @@
     };
   }
 
-  // ───────────────── Dialogo de vinculacion ─────────────────
+  // ───────────────── Diálogo de vinculación ─────────────────
 
   function llenarSelectSku(seleccion) {
     var lista = window.SKU.todos().slice().sort(function (a, b) {
@@ -590,8 +691,6 @@
     alternarSkuNuevo();
   }
 
-  // Oculta las opciones que no casan con el texto tecleado, para no tener que
-  // desplazar una lista larga de SKU con el dedo. "__nuevo__" siempre visible.
   function filtrarSelectSku() {
     var q = el['vinc-sku-buscar'].value.trim().toLowerCase();
     var opciones = el['vinc-sku'].options;
@@ -611,7 +710,6 @@
     }
   }
 
-  /** Proveedores ya escritos alguna vez, para no volver a teclearlos. */
   function proveedoresConocidos() {
     var vistos = {}, lista = [];
     window.SKU.todos().forEach(function (s) {
@@ -631,8 +729,9 @@
 
     el['vinc-codigo'].value = v.codigo;
     el['vinc-codigo'].readOnly = true;
+    el['vinc-info'].style.color = '';
     el['vinc-info'].textContent = v.tipo.nombre +
-      (window.Barcode.indicador(v.codigo) ? ' — digito indicador ' + window.Barcode.indicador(v.codigo) : '') +
+      (window.Barcode.indicador(v.codigo) ? ' — dígito indicador ' + window.Barcode.indicador(v.codigo) : '') +
       (window.Barcode.origenGs1(v.codigo) ? ' — ' + window.Barcode.origenGs1(v.codigo) : '');
 
     el['vinc-nuevo-sku'].value = '';
@@ -640,7 +739,6 @@
     llenarSelectSku(skuSugerido || (yaVinculado ? yaVinculado.sku.sku : null));
 
     el['vinc-nivel'].value = nivel;
-    // Para un empaque hay que contar: no se inventa una cantidad.
     el['vinc-cantidad'].value = yaVinculado
       ? (yaVinculado.entrada.cantidad || '')
       : (nivel === 'unidad' ? 1 : '');
@@ -651,31 +749,26 @@
       return '<option value="' + escapar(p) + '">';
     }).join('');
 
-    // Un codigo ya vinculado se abre para corregir nivel, cantidad o proveedor.
     el['vinc-sugerencias'].innerHTML = yaVinculado
-      ? '<p class="ayuda">Este codigo ya pertenece a <strong>' + escapar(yaVinculado.sku.sku) +
-        '</strong>. Cambiar el SKU de destino aqui no lo mueve: primero hay que ' +
-        'desvincularlo desde la vista SKU.</p>'
+      ? '<p class="nota"><span>Este código ya pertenece a <strong>' + escapar(yaVinculado.sku.sku) +
+        '</strong>. Cambiar el SKU de destino aquí no lo mueve: primero hay que ' +
+        'desvincularlo desde la vista SKU.</span></p>'
       : '';
 
     el['dialogo-vincular'].showModal();
     (el['vinc-sku'].value === '__nuevo__' ? el['vinc-nuevo-nombre'] : el['vinc-cantidad']).focus();
   }
 
-  /**
-   * Agregar un codigo a un SKU que ya existe, sin haber leido nada antes.
-   * Es el camino de compras: abre el SKU y dispara el escaner sobre la caja.
-   */
   function abrirVincularVacio(s) {
     if (!s) return;
     el['vinc-codigo'].value = '';
     el['vinc-codigo'].readOnly = false;
-    el['vinc-info'].textContent = 'Dispara el escaner sobre el empaque, o escribe el codigo.';
+    el['vinc-info'].style.color = '';
+    el['vinc-info'].textContent = 'Dispara el escáner sobre el empaque, o escribe el código.';
     el['vinc-sugerencias'].innerHTML = '';
     el['vinc-nuevo-sku'].value = '';
     el['vinc-nuevo-nombre'].value = '';
     llenarSelectSku(s.sku);
-    // Agregar un codigo a un SKU que ya existe casi siempre es la caja.
     el['vinc-nivel'].value = 'caja';
     el['vinc-cantidad'].value = '';
     el['vinc-proveedor'].value = '';
@@ -687,10 +780,13 @@
     el['vinc-codigo'].focus();
   }
 
-  /** Mientras se escribe el codigo en el dialogo: tipo, validez y nivel probable. */
   function informarCodigoVinculo() {
     var valor = el['vinc-codigo'].value;
-    if (!valor.trim()) { el['vinc-info'].textContent = ''; return; }
+    if (!valor.trim()) {
+      el['vinc-info'].textContent = '';
+      el['vinc-info'].style.color = '';
+      return;
+    }
     var v = window.Barcode.validar(valor);
     el['vinc-info'].textContent = v.tipo.nombre + ' — ' + v.motivo;
     el['vinc-info'].style.color = v.valido ? 'var(--ok)' : 'var(--error)';
@@ -710,16 +806,15 @@
 
     var codigo = el['vinc-codigo'].value;
     if (!String(codigo).trim()) {
-      avisar('Falta el codigo de barras', 'error');
+      avisar('Falta el código de barras', 'error');
       el['vinc-codigo'].focus();
       return;
     }
     var nivel = el['vinc-nivel'].value;
     var cantidad = el['vinc-cantidad'].value;
 
-    // Una caja sin cantidad no sirve para recibir mercancia: se exige el numero.
     if (nivel !== 'variable' && (!String(cantidad).trim() || Number(cantidad) < 1)) {
-      avisar('Cuenta cuantas unidades trae el empaque y escribe el numero', 'error');
+      avisar('Cuenta cuántas unidades trae el empaque y escribe el número', 'error');
       el['vinc-cantidad'].focus();
       return;
     }
@@ -744,24 +839,13 @@
     if (!r.ok) { avisar(r.error, 'error'); return; }
 
     el['dialogo-vincular'].close();
-    avisar('Codigo ' + window.Barcode.normalizar(codigo) + ' vinculado a ' + r.sku.sku, 'ok');
+    avisar('Código ' + window.Barcode.normalizar(codigo) + ' vinculado a ' + r.sku.sku, 'ok');
     refrescarSkus();
     pintarBloqueSku(window.Barcode.validar(codigo));
   }
 
   // ───────────────── Vista de SKU ─────────────────
 
-  /**
-   * Celda U/E (unidad de empaque): como viene el producto del proveedor.
-   *
-   * El dato manda el listado del DMS, que trae la palabra de empaque y las
-   * unidades que contiene (CAJ 24, PAC 1000). Cuando el listado no lo trajo,
-   * sirve el empaque que alguien confirmo contandolo al escanear: es el mismo
-   * dato, obtenido abriendo la caja.
-   *
-   * Si no hay ninguno de los dos se dice, porque sin U/E una caja recibida no
-   * se puede convertir en unidades de inventario.
-   */
   function celdaUnidadDeEmpaque(s) {
     if (s.unidadesPorCaja) {
       return '<strong>' + (s.empaque ? escapar(s.empaque) + ' ' : '') +
@@ -788,15 +872,50 @@
     return '<span class="pildora pildora-aviso">sin U/E</span>';
   }
 
+  function skuTieneCantidadPendiente(s) {
+    for (var i = 0; i < s.codigos.length; i++) {
+      var c = s.codigos[i];
+      if (c.nivel !== 'unidad' && c.nivel !== 'variable' && c.cantidad < 1) return true;
+    }
+    return false;
+  }
+
+  function skuTieneCaja(s) {
+    for (var i = 0; i < s.codigos.length; i++) {
+      var n = s.codigos[i].nivel;
+      if (n === 'caja' || n === 'paca' || n === 'display') return true;
+    }
+    return false;
+  }
+
+  function aplicarFiltroSkus(lista) {
+    if (filtroSku === 'sin-cantidad') {
+      return lista.filter(function (s) {
+        return skuTieneCantidadPendiente(s) || (!s.unidadesPorCaja && !s.empaque && !s.codigos.length);
+      });
+    }
+    if (filtroSku === 'precio-pendiente') {
+      return lista.filter(function (s) { return s.precioCuadra === false; });
+    }
+    if (filtroSku === 'sin-codigo') {
+      return lista.filter(function (s) { return s.codigos.length === 0; });
+    }
+    if (filtroSku === 'con-caja') {
+      return lista.filter(skuTieneCaja);
+    }
+    return lista;
+  }
+
   function refrescarSkus() {
     var e = window.SKU.estadisticas();
     el['metricas-sku'].innerHTML =
       metrica(e.skus, 'SKU registrados') +
-      metrica(e.codigos, 'Codigos vinculados') +
+      metrica(e.codigos, 'Códigos vinculados', 'ok') +
       metrica(e.cajas, 'Empaques de caja o paca') +
-      metrica(e.sinCantidad, 'Sin cantidad confirmada');
+      metrica(e.sinCantidad, 'Sin cantidad confirmada', e.sinCantidad > 0 ? 'aviso' : '');
 
-    var lista = window.SKU.buscarTexto(el['busqueda-skus'].value);
+    var consulta = el['busqueda-skus'].value;
+    var lista = aplicarFiltroSkus(window.SKU.buscarTexto(consulta));
     lista.sort(function (a, b) { return a.sku.localeCompare(b.sku, 'es'); });
 
     var pagina = pagSkus.recortar(lista);
@@ -808,30 +927,28 @@
           }).map(function (c) {
             var falta = c.nivel !== 'unidad' && c.nivel !== 'variable' && c.cantidad < 1;
             return '<div class="codigo-fila">' +
-              '<code class="mono">' + escapar(c.codigo) + '</code>' +
+              botonCopiar(c.codigo, 'código de barras') +
               '<span class="pildora">' + escapar(c.nivel) + '</span>' +
               (c.nivel === 'variable'
                 ? ''
                 : '<span class="pildora' + (falta ? ' pildora-aviso' : '') + '">' +
                   (falta ? 'sin cantidad' : c.cantidad + ' u') + '</span>') +
-              '<button class="btn btn-plano btn-pequeno" data-desvincular="' + escapar(c.codigo) +
-                '" title="Quitar este codigo del SKU">quitar</button>' +
-              // El nombre del proveedor va en su propia linea: es largo y es
-              // solo referencia para reconocer la factura.
+              '<button type="button" class="btn-icono btn-icono-peligro" data-desvincular="' + escapar(c.codigo) +
+                '" title="Quitar este código del SKU" aria-label="Quitar código ' + escapar(c.codigo) + '">' + ICONOS.cerrar + '</button>' +
               (c.nombreProveedor
                 ? '<span class="ayuda codigo-proveedor">' + escapar(c.nombreProveedor) +
                   (c.proveedor ? ' — ' + escapar(c.proveedor) : '') + '</span>'
                 : '') +
               '</div>';
           }).join('')
-        : '<span class="ayuda">Sin codigos todavia</span>';
+        : '<span class="ayuda">Sin códigos todavía</span>';
 
       return '<tr>' +
-        '<td class="mono" data-etiqueta="SKU">' + escapar(s.sku) + '</td>' +
+        '<td class="mono" data-etiqueta="SKU">' + botonCopiar(s.sku, 'SKU') + '</td>' +
         '<td class="celda-principal" data-etiqueta="Nombre interno">' + escapar(s.nombre) + '</td>' +
-        '<td class="celda-ancha" data-etiqueta="Codigos de barras">' + codigos + '</td>' +
+        '<td class="celda-ancha" data-etiqueta="Códigos de barras">' + codigos + '</td>' +
         '<td class="num" data-etiqueta="U/E">' + celdaUnidadDeEmpaque(s) + '</td>' +
-        '<td class="col-baja" data-etiqueta="Categoria">' + escapar(s.categoria) + '</td>' +
+        '<td class="col-baja" data-etiqueta="Categoría">' + escapar(s.categoria) + '</td>' +
         '<td class="num" data-etiqueta="Precio">' + (s.precio === null
           ? '<span class="ayuda">sin precio</span>'
           : '<strong>' + escapar(dinero(s.precio)) + '</strong>' +
@@ -840,23 +957,32 @@
               ? '<br><span class="pildora pildora-aviso">por confirmar</span>'
               : '')) + '</td>' +
         '<td class="num col-media" data-etiqueta="Cajas">' +
-          (s.cajas === null ? '<span class="ayuda">-</span>' : s.cajas) + '</td>' +
+          (s.cajas === null ? '<span class="ayuda">—</span>' : s.cajas) + '</td>' +
         '<td class="num celda-acciones"><div class="tabla-acciones">' +
-          '<button class="btn btn-secundario btn-pequeno" data-sku-vincular="' + escapar(s.sku) + '">Agregar codigo</button>' +
-          '<button class="btn btn-secundario btn-pequeno" data-sku-editar="' + escapar(s.sku) + '">Editar</button>' +
-          '<button class="btn btn-peligro btn-pequeno" data-sku-borrar="' + escapar(s.sku) + '">Borrar</button>' +
+          '<button type="button" class="btn btn-secundario btn-pequeno" data-sku-vincular="' + escapar(s.sku) + '" title="Agregar otro código de barras">' + ICONOS.mas + ' Código</button>' +
+          '<button type="button" class="btn btn-secundario btn-pequeno" data-sku-editar="' + escapar(s.sku) + '">' + ICONOS.editar + ' Editar</button>' +
+          '<button type="button" class="btn btn-peligro-suave btn-pequeno" data-sku-borrar="' + escapar(s.sku) + '" title="Borrar SKU">' + ICONOS.borrar + '</button>' +
         '</div></td>' +
       '</tr>';
     }).join('');
 
     pagSkus.pintar();
     el['sin-skus'].classList.toggle('oculto', lista.length > 0);
+    var hayFiltro = !!(consulta.trim() || filtroSku !== 'todos');
+    var msgSku = el['sin-skus'].querySelector('p');
+    if (msgSku) {
+      msgSku.textContent = e.skus === 0
+        ? 'Todavía no hay SKU registrados. Crea uno nuevo o carga el listado en la pestaña Listado.'
+        : 'Ningún SKU coincide con el filtro o la búsqueda.';
+    }
+    if (el['btn-limpiar-filtros-sku']) {
+      el['btn-limpiar-filtros-sku'].classList.toggle('oculto', !hayFiltro || e.skus === 0);
+    }
 
     el['lista-categorias-sku'].innerHTML = window.SKU.categorias().map(function (c) {
       return '<option value="' + escapar(c) + '">';
     }).join('');
 
-    // Las cuentas de la tabla cambiaron: el indicador de arriba las repite.
     pintarEstadoTabla();
   }
 
@@ -895,30 +1021,37 @@
   function borrarSku(sku) {
     var s = window.SKU.buscarSku(sku);
     if (!s) return;
-    if (!window.confirm(
-      'Borrar el SKU ' + s.sku + ' (' + s.nombre + ')?\n\n' +
-      'Se pierden sus ' + s.codigos.length + ' codigo(s) vinculado(s). ' +
-      'Esta accion no se puede deshacer.'
-    )) return;
-    var r = window.SKU.eliminar(sku);
-    if (!r.ok) { avisar(r.error, 'error'); return; }
-    avisar('SKU borrado', 'ok');
-    refrescarSkus();
-    if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
+    window.UI.confirmar({
+      titulo: 'Borrar SKU ' + s.sku,
+      mensaje: '¿Seguro que quieres borrar "' + s.nombre + '"?',
+      detalle: 'Se pierden sus ' + s.codigos.length + ' código(s) vinculado(s). Esta acción no se puede deshacer.',
+      textoConfirmar: 'Borrar SKU'
+    }).then(function (ok) {
+      if (!ok) return;
+      var r = window.SKU.eliminar(sku);
+      if (!r.ok) { avisar(r.error, 'error'); return; }
+      avisar('SKU borrado', 'ok');
+      refrescarSkus();
+      if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
+    });
   }
 
   function quitarVinculo(codigo) {
     var h = window.SKU.buscarPorCodigo(codigo);
     if (!h) return;
-    if (!window.confirm(
-      'Quitar el codigo ' + codigo + ' del SKU ' + h.sku.sku + '?\n\n' +
-      'El SKU se queda, pero ese codigo deja de resolver a ningun producto al leerlo.'
-    )) return;
-    var r = window.SKU.desvincular(codigo);
-    if (!r.ok) { avisar(r.error, 'error'); return; }
-    avisar('Codigo desvinculado', 'ok');
-    refrescarSkus();
-    if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
+    window.UI.confirmar({
+      titulo: 'Desvincular código',
+      mensaje: '¿Quitar el código ' + codigo + ' del SKU ' + h.sku.sku + '?',
+      detalle: 'El SKU permanece en la tabla, pero ese código dejará de identificar al producto al escanearlo.',
+      textoConfirmar: 'Desvincular'
+    }).then(function (ok) {
+      if (!ok) return;
+      var r = window.SKU.desvincular(codigo);
+      if (!r.ok) { avisar(r.error, 'error'); return; }
+      avisar('Código desvinculado', 'ok');
+      refrescarSkus();
+      if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigo));
+    });
   }
 
   function importarSku(evento) {
@@ -926,17 +1059,21 @@
     if (!archivo) return;
     var lector = new FileReader();
     lector.onload = function () {
-      var reemplazar = window.confirm(
-        'Reemplazar toda la tabla de SKU con el contenido del archivo?\n\n' +
-        'Aceptar = reemplazar.  Cancelar = agregar o actualizar sin borrar lo existente.'
-      );
-      var r = window.SKU.importar(String(lector.result), reemplazar);
-      if (!r.ok) { avisar(r.error, 'error'); return; }
-      avisar(r.skusNuevos + ' SKU nuevos, ' + r.codigosNuevos + ' codigos vinculados, ' +
-             r.actualizados + ' actualizados' +
-             (r.rechazados.length ? ', ' + r.rechazados.length + ' rechazados' : ''), 'ok');
-      if (r.rechazados.length) console.warn('Filas rechazadas al importar SKU:', r.rechazados);
-      refrescarSkus();
+      var contenido = String(lector.result);
+      window.UI.elegirImportacion({
+        titulo: 'Importar tabla de SKU',
+        mensaje: 'Archivo: ' + archivo.name + '. Elige cómo aplicar los datos:'
+      }).then(function (modo) {
+        if (!modo) return;
+        var reemplazar = modo === 'reemplazar';
+        var r = window.SKU.importar(contenido, reemplazar);
+        if (!r.ok) { avisar(r.error, 'error'); return; }
+        avisar(r.skusNuevos + ' SKU nuevos, ' + r.codigosNuevos + ' códigos vinculados, ' +
+               r.actualizados + ' actualizados' +
+               (r.rechazados.length ? ', ' + r.rechazados.length + ' rechazados' : ''), 'ok');
+        if (r.rechazados.length) console.warn('Filas rechazadas al importar SKU:', r.rechazados);
+        refrescarSkus();
+      });
     };
     lector.readAsText(archivo);
     evento.target.value = '';
@@ -944,20 +1081,22 @@
 
   function vaciarSkus() {
     var total = window.SKU.todos().length;
-    if (!total) { avisar('La tabla de SKU ya esta vacia', 'ok'); return; }
-    if (!window.confirm(
-      'Vaciar la tabla de ' + total + ' SKU?\n\n' +
-      'Esto borra los vinculos entre codigos y SKU, que son dato propio de la ' +
-      'empresa y no se pueden volver a consultar en ninguna fuente. ' +
-      'Exportalos antes si los necesitas.'
-    )) return;
-    window.SKU.vaciar();
-    avisar('Tabla de SKU vacia', 'ok');
-    refrescarSkus();
-    if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
+    if (!total) { avisar('La tabla de SKU ya está vacía', 'ok'); return; }
+    window.UI.confirmar({
+      titulo: 'Vaciar tabla de SKU',
+      mensaje: '¿Vaciar la tabla completa de ' + total + ' SKU?',
+      detalle: 'Esto borra los vínculos entre códigos y SKU, que son dato propio de la empresa y no se pueden volver a consultar en ninguna fuente. Expórtalos antes si los necesitas.',
+      textoConfirmar: 'Sí, vaciar tabla'
+    }).then(function (ok) {
+      if (!ok) return;
+      window.SKU.vaciar();
+      avisar('Tabla de SKU vacía', 'ok');
+      refrescarSkus();
+      if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
+    });
   }
 
-  // ───────────────── Dialogo de edicion ─────────────────
+  // ───────────────── Diálogo de edición ─────────────────
 
   var codigoEditando = null;
 
@@ -970,13 +1109,18 @@
     el['editar-categoria'].value = producto ? producto.categoria : '';
     el['editar-marca'].value = producto ? (producto.marca || '') : '';
     el['editar-codigo-aviso'].textContent = '';
+    el['editar-codigo-aviso'].style.color = '';
     el['dialogo-editar'].showModal();
     (producto ? el['editar-nombre'] : el['editar-codigo']).focus();
   }
 
   function validarCodigoEnVivo() {
     var valor = el['editar-codigo'].value;
-    if (!valor) { el['editar-codigo-aviso'].textContent = ''; return; }
+    if (!valor) {
+      el['editar-codigo-aviso'].textContent = '';
+      el['editar-codigo-aviso'].style.color = '';
+      return;
+    }
     var v = window.Barcode.validar(valor);
     el['editar-codigo-aviso'].textContent = v.tipo.nombre + ' — ' + v.motivo;
     el['editar-codigo-aviso'].style.color = v.valido ? 'var(--ok)' : 'var(--error)';
@@ -1001,87 +1145,147 @@
   function borrar(codigo) {
     var p = window.DB.buscar(codigo);
     if (!p) return;
-    if (!window.confirm('Borrar "' + p.nombre + '" (' + p.codigo + ') de la base?\n\nEsta accion no se puede deshacer.')) return;
-    var r = window.DB.eliminar(codigo);
-    if (!r.ok) { avisar(r.error, 'error'); return; }
-    avisar('Producto borrado', 'ok');
-    refrescarProductos();
+    window.UI.confirmar({
+      titulo: 'Borrar producto de la caché',
+      mensaje: '¿Borrar "' + p.nombre + '" (' + p.codigo + ')?',
+      detalle: 'Esta acción no se puede deshacer.',
+      textoConfirmar: 'Borrar'
+    }).then(function (ok) {
+      if (!ok) return;
+      var r = window.DB.eliminar(codigo);
+      if (!r.ok) { avisar(r.error, 'error'); return; }
+      avisar('Producto borrado', 'ok');
+      refrescarProductos();
+    });
   }
 
   // ───────────────── Historial ─────────────────
 
+  function historialSkuDe(h) {
+    if (h.encontrado || h.valido === false || !h.codigo) return null;
+    return window.SKU.buscarPorCodigo(h.codigo);
+  }
+
+  function aplicarFiltroHistorial(lista) {
+    var q = el['busqueda-historial'] ? el['busqueda-historial'].value.trim().toLowerCase() : '';
+    var filtrada = lista;
+
+    if (filtroHistorial === 'encontrados') {
+      filtrada = filtrada.filter(function (h) { return !!h.encontrado || !!historialSkuDe(h); });
+    } else if (filtroHistorial === 'no-registrados') {
+      filtrada = filtrada.filter(function (h) { return !h.encontrado && h.valido !== false && !historialSkuDe(h); });
+    } else if (filtroHistorial === 'invalidos') {
+      filtrada = filtrada.filter(function (h) { return h.valido === false; });
+    }
+
+    if (!q) return filtrada;
+    return filtrada.filter(function (h) {
+      var enSku = historialSkuDe(h);
+      var nombreSku = enSku ? (enSku.sku.nombre + ' ' + enSku.sku.sku) : '';
+      return String(h.codigo || '').toLowerCase().indexOf(q) !== -1 ||
+             String(h.nombre || '').toLowerCase().indexOf(q) !== -1 ||
+             nombreSku.toLowerCase().indexOf(q) !== -1 ||
+             String(h.fuente || '').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
   function refrescarHistorial() {
-    var lista = window.DB.obtenerHistorial();
+    var todos = window.DB.obtenerHistorial();
+    var lista = aplicarFiltroHistorial(todos);
     var pagina = pagHistorial.recortar(lista);
 
     el['cuerpo-historial'].innerHTML = pagina.map(function (h) {
+      var enSku = historialSkuDe(h);
+      var celdaProducto;
+      if (h.encontrado) {
+        celdaProducto = escapar(h.nombre);
+      } else if (h.valido === false) {
+        celdaProducto = '<span class="pildora pildora-error">código inválido</span>';
+      } else if (enSku) {
+        celdaProducto = escapar(enSku.sku.nombre) +
+          ' <span class="pildora pildora-ok">SKU ' + escapar(enSku.sku.sku) + '</span>';
+      } else {
+        celdaProducto = '<span class="pildora pildora-aviso">no registrado</span>';
+      }
       return '<tr>' +
         '<td data-etiqueta="Fecha y hora">' + escapar(fecha.format(new Date(h.ts))) + '</td>' +
-        '<td class="mono" data-etiqueta="Codigo">' + escapar(h.codigo) + '</td>' +
-        '<td class="celda-principal" data-etiqueta="Producto">' + (h.encontrado
-          ? escapar(h.nombre)
-          : (h.valido === false
-              ? '<span class="pildora pildora-error">codigo invalido</span>'
-              : '<span class="pildora pildora-aviso">no registrado</span>')) + '</td>' +
+        '<td class="mono" data-etiqueta="Código">' + (h.codigo ? botonCopiar(h.codigo, 'código') : '<span class="ayuda">(vacío)</span>') + '</td>' +
+        '<td class="celda-principal" data-etiqueta="Producto">' + celdaProducto + '</td>' +
         '<td class="col-media" data-etiqueta="Fuente">' + escapar(h.fuente) + '</td>' +
+        '<td class="num celda-acciones"><div class="tabla-acciones">' +
+          (h.codigo
+            ? '<button type="button" class="btn btn-plano btn-pequeno" data-historial-ver="' + escapar(h.codigo) + '" title="Consultar este código en el escáner">' + ICONOS.escaner + ' Ver</button>'
+            : '') +
+        '</div></td>' +
       '</tr>';
     }).join('');
 
     pagHistorial.pintar();
     el['sin-historial'].classList.toggle('oculto', lista.length > 0);
+    var msgHist = el['sin-historial'].querySelector('p');
+    if (msgHist) {
+      msgHist.textContent = todos.length === 0
+        ? 'Todavía no hay lecturas registradas en este equipo.'
+        : 'Ninguna lectura coincide con el filtro o la búsqueda.';
+    }
   }
 
-  // ───────────────── Camara ─────────────────
+  // ───────────────── Cámara ─────────────────
+
+  function actualizarBotonCamara(activa) {
+    if (el['btn-camara-texto']) {
+      el['btn-camara-texto'].textContent = activa ? 'Detener la cámara' : 'Usar la cámara';
+    }
+    if (el['btn-camara-icono']) {
+      el['btn-camara-icono'].innerHTML = activa ? ICONOS.detener : ICONOS.camara;
+    }
+    el['btn-camara'].classList.toggle('btn-camara-activa', activa);
+    el['btn-camara'].classList.toggle('btn-secundario', !activa);
+  }
 
   function alternarCamara() {
     if (window.Scanner.estaActivo()) {
       window.Scanner.detener();
       el['camara-envoltorio'].classList.add('oculto');
-      el['btn-camara'].textContent = 'Usar la camara';
+      actualizarBotonCamara(false);
       estado('Listo');
       return;
     }
 
     el['camara-envoltorio'].classList.remove('oculto');
-    estado('Abriendo camara...', 'activa');
+    estado('Abriendo cámara…', 'activa');
 
     window.Scanner.iniciar({
       video: el['video'],
       onLectura: function (codigo, formato) {
         el['aviso-camara'].classList.add('oculto');
         el['entrada-codigo'].value = codigo;
-        procesarCodigo(codigo, 'camara' + (formato ? ' (' + formato + ')' : ''));
+        procesarCodigo(codigo, 'cámara' + (formato ? ' (' + formato + ')' : ''));
       },
       onPista: function (mensaje) {
-        // Consejo, no error: la camara sigue encendida y buscando.
         el['aviso-camara'].textContent = mensaje;
         el['aviso-camara'].classList.remove('oculto');
-        estado('Buscando codigo...', 'activa');
+        estado('Buscando código…', 'activa');
       },
       onError: function (mensaje) {
         el['aviso-camara'].textContent = mensaje;
         el['aviso-camara'].classList.remove('oculto');
         el['camara-envoltorio'].classList.add('oculto');
-        estado('Camara no disponible', 'error');
+        actualizarBotonCamara(false);
+        estado('Cámara no disponible', 'error');
         avisar(mensaje, 'error');
       }
     }).then(function (ok) {
       if (ok) {
-        el['btn-camara'].textContent = 'Detener la camara';
+        actualizarBotonCamara(true);
         el['aviso-camara'].classList.add('oculto');
-        estado('Camara activa — apunta al codigo', 'activa');
+        estado('Cámara activa — apunta al código', 'activa');
       }
     });
   }
 
   // ───────────────── Vista del listado de precios ─────────────────
-  //
-  // El listado del DMS es la fuente del precio y del SKU. Se lee en dos pasos
-  // a proposito: primero se muestra que trae el archivo, despues se carga. Un
-  // listado puede traer mal la columna de codigos, y eso hay que verlo antes
-  // de escribir nada en la tabla.
 
-  // Lo ultimo que se leyo, a la espera de que alguien confirme la carga.
   var listadoLeido = null;
 
   function leerListado(texto) {
@@ -1092,7 +1296,7 @@
     if (!r.ok) {
       listadoLeido = null;
       el['resumen-listado'].innerHTML =
-        '<div class="aviso aviso-error">' + escapar(r.error) + '</div>';
+        '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' + escapar(r.error) + '</span></div>';
       return;
     }
 
@@ -1100,11 +1304,11 @@
     var n = r.resumen;
 
     el['resumen-listado'].innerHTML =
-      '<div class="separador"></div>' +
+      '<div class="separador"><span>Vista previa del archivo</span></div>' +
       '<div class="metricas">' +
-        metrica(n.total, 'Filas leidas') +
-        metrica(n.ok, 'Con codigo de barras') +
-        metrica(n.sinCodigo + n.invalidos + n.incompletas, 'A revision') +
+        metrica(n.total, 'Filas leídas') +
+        metrica(n.ok, 'Con código de barras', 'ok') +
+        metrica(n.sinCodigo + n.invalidos + n.incompletas, 'A revisión', (n.sinCodigo + n.invalidos + n.incompletas) > 0 ? 'aviso' : '') +
         metrica(n.proveedores.length, 'Proveedores') +
       '</div>' +
 
@@ -1112,51 +1316,50 @@
         dato('Formato', r.formato === 'excel'
           ? 'Excel, hoja "' + r.hoja + '"'
           : (r.formato === 'csv' ? 'CSV con cabecera' : 'texto del reporte con columnas')) +
-        dato('Codigos de unidad', String(n.unidades)) +
-        dato('Codigos de empaque agrupado (GTIN-14)', String(n.cajas)) +
+        dato('Códigos de unidad', String(n.unidades)) +
+        dato('Códigos de empaque agrupado (GTIN-14)', String(n.cajas)) +
         dato('Filas con precio final', String(n.conPrecio)) +
       '</dl>' +
 
       (n.invalidos
-        ? '<div class="aviso aviso-error">' +
-            n.invalidos + ' filas traen en la columna Alterna un numero que no es un ' +
-            'codigo de barras' +
+        ? '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' +
+            n.invalidos + ' filas traen en la columna Alterna un número que no es un ' +
+            'código de barras' +
             (n.derivadosDelSku
               ? ', y ' + n.derivadosDelSku + ' de esas son relleno del DMS armado con el propio SKU'
               : '') +
-            '. No se guardan como codigo: van a la cola de pendientes.' +
-          '</div>'
+            '. No se guardan como código: van a la cola de pendientes.</span></div>'
         : '') +
 
       (n.precioNoCuadra
-        ? '<div class="aviso aviso-error">' +
+        ? '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' +
             'En ' + n.precioNoCuadra + ' filas el precio final no sale de Precio Und, ' +
             'el descuento y el IVA. En cigarrillos y algunas bebidas es el impuesto al ' +
             'consumo, que no aparece en ninguna columna. En el resto, la fila viene ' +
-            'corrida de renglon y su codigo de barras puede no ser el de ese producto.' +
-          '</div>'
+            'corrida de renglón y su código de barras puede no ser el de ese producto.' +
+          '</span></div>'
         : '') +
 
       (n.duplicados.length
-        ? '<div class="aviso aviso-error">' +
-            n.duplicados.length + ' codigos aparecen en mas de un SKU. El primero se ' +
-            'vincula y los demas quedan rechazados: hay que decidir a cual pertenecen.' +
-          '</div>'
+        ? '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' +
+            n.duplicados.length + ' códigos aparecen en más de un SKU. El primero se ' +
+            'vincula y los demás quedan rechazados: hay que decidir a cuál pertenecen.' +
+          '</span></div>'
         : '') +
 
       (n.incompletas
-        ? '<div class="aviso">' +
-            n.incompletas + ' filas vinieron sin descripcion ni precios. Si el archivo ' +
+        ? '<div class="aviso">' + ICONOS.info + '<span class="aviso-texto">' +
+            n.incompletas + ' filas vinieron sin descripción ni precios. Si el archivo ' +
             'es el texto de un PDF, es el PDF que pierde las columnas cuando la ' +
-            'descripcion es larga; el CSV exportado del DMS no tiene ese problema.' +
-          '</div>'
+            'descripción es larga; el CSV exportado del DMS no tiene ese problema.' +
+          '</span></div>'
         : '') +
 
       '<div class="campo-grupo">' +
-        '<button id="btn-listado-cargar" class="btn btn-primario">' +
+        '<button id="btn-listado-cargar" type="button" class="btn btn-primario">' +
           'Cargar ' + n.ok + ' productos y ' + (n.total - n.ok) + ' pendientes' +
         '</button>' +
-        '<button id="btn-listado-cargar-limpio" class="btn btn-secundario">' +
+        '<button id="btn-listado-cargar-limpio" type="button" class="btn btn-peligro-suave">' +
           'Reemplazar todo lo que haya' +
         '</button>' +
       '</div>';
@@ -1168,48 +1371,53 @@
   function aplicarListado(reemplazar) {
     if (!listadoLeido) return;
 
-    if (reemplazar && !window.confirm(
-      'Borrar la tabla de SKU y la cola de pendientes, y cargar el listado desde cero?\n\n' +
-      'Se pierden los codigos que se vincularon escaneando y las correcciones a mano. ' +
-      'Exportalos antes si los necesitas.'
-    )) return;
+    var continuar = reemplazar
+      ? window.UI.confirmar({
+          titulo: 'Reemplazar tabla completa con el listado',
+          mensaje: '¿Borrar la tabla de SKU y la cola de pendientes, y cargar este listado desde cero?',
+          detalle: 'Se pierden los códigos vinculados escaneando y las correcciones a mano. Expórtalos antes si los necesitas.',
+          textoConfirmar: 'Reemplazar todo'
+        })
+      : Promise.resolve(true);
 
-    var filas = listadoLeido.filas;
-    el['resumen-listado'].innerHTML =
-      '<div class="aviso">Cargando ' + filas.length + ' filas...</div>';
+    continuar.then(function (ok) {
+      if (!ok || !listadoLeido) return;
+      var filas = listadoLeido.filas;
+      el['resumen-listado'].innerHTML =
+        '<div class="consultando"><div class="girador" aria-hidden="true"></div>' +
+        '<div><strong>Cargando ' + filas.length + ' filas…</strong>' +
+        '<p class="ayuda">Actualizando precios, empaques y cola de pendientes.</p></div></div>';
 
-    window.Sincronizar.aplicarListado(filas, reemplazar).then(function (r) {
-      terminarCarga(r);
+      window.Sincronizar.aplicarListado(filas, reemplazar).then(function (r) {
+        terminarCarga(r);
+      });
     });
   }
 
   function terminarCarga(r) {
     if (!r || !r.ok) { avisar((r && r.error) || 'No se pudo cargar el listado', 'error'); return; }
 
-    avisar(r.skusNuevos + ' SKU nuevos, ' + r.codigosNuevos + ' codigos vinculados, ' +
-           r.aRevision + ' a revision' +
+    avisar(r.skusNuevos + ' SKU nuevos, ' + r.codigosNuevos + ' códigos vinculados, ' +
+           r.aRevision + ' a revisión' +
            (r.rechazados.length ? ', ' + r.rechazados.length + ' rechazados' : ''), 'ok');
 
-    // El resumen se reemplaza por el resultado: deja de haber nada que
-    // confirmar, y un boton que ya no hace nada confunde mas que ayuda.
     el['resumen-listado'].innerHTML =
-      '<div class="separador"></div>' +
-      '<div class="aviso aviso-ok">' +
+      '<div class="separador"><span>Resultado de la carga</span></div>' +
+      '<div class="aviso aviso-ok">' + ICONOS.ok + '<span class="aviso-texto">' +
         'Listado cargado: ' + r.skusNuevos + ' SKU nuevos, ' +
-        r.codigosNuevos + ' codigos de barras vinculados, ' +
-        r.actualizados + ' codigos actualizados y ' +
+        r.codigosNuevos + ' códigos de barras vinculados, ' +
+        r.actualizados + ' códigos actualizados y ' +
         r.aRevision + ' filas en la cola de pendientes.' +
-      '</div>' +
+      '</span></div>' +
       (r.rechazados.length
-        ? '<div class="aviso aviso-error">' + r.rechazados.length +
-          ' filas quedaron sin vincular porque su codigo ya pertenece a otro SKU. ' +
-          'Hay que decidir a cual pertenece cada uno; el detalle esta en la consola ' +
-          'del navegador.</div>'
+        ? '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' +
+          r.rechazados.length +
+          ' filas quedaron sin vincular porque su código ya pertenece a otro SKU. ' +
+          'Hay que decidir a cuál pertenece cada uno; el detalle está en la consola ' +
+          'del navegador.</span></div>'
         : '');
 
     if (r.rechazados.length) {
-      // A cual SKU pertenece un codigo repetido es una decision de compras,
-      // no algo que se pueda resolver aqui: se deja el detalle a la vista.
       console.warn('Filas rechazadas al cargar el listado:', r.rechazados);
     }
 
@@ -1220,55 +1428,79 @@
     refrescarRevision();
   }
 
-  function importarListado(evento) {
-    var archivo = evento.target.files && evento.target.files[0];
+  function procesarArchivoListado(archivo) {
     if (!archivo) return;
-
     var esExcel = /\.xlsx?$/i.test(archivo.name);
     var lector = new FileReader();
 
     lector.onload = function () {
-      el['resumen-listado'].innerHTML = '<div class="aviso">Leyendo ' + escapar(archivo.name) + '...</div>';
+      el['resumen-listado'].innerHTML =
+        '<div class="consultando"><div class="girador" aria-hidden="true"></div>' +
+        '<div><strong>Leyendo ' + escapar(archivo.name) + '…</strong>' +
+        '<p class="ayuda">Validando columnas, precios y códigos de barras.</p></div></div>';
       window.Listado.leerArchivo(lector.result, archivo.name)
         .then(mostrarListado)
         .catch(function (e) {
           listadoLeido = null;
           el['resumen-listado'].innerHTML =
-            '<div class="aviso aviso-error">' + escapar(e.message) + '</div>';
+            '<div class="aviso aviso-error">' + ICONOS.error + '<span class="aviso-texto">' + escapar(e.message) + '</span></div>';
         });
     };
 
     if (esExcel) {
       lector.readAsArrayBuffer(archivo);
     } else {
-      // Los reportes de Crystal salen en cp1252. Leerlos como UTF-8 rompe las
-      // tildes y la enie, que estan en casi todas las descripciones.
       lector.readAsText(archivo, 'windows-1252');
     }
+  }
+
+  function importarListado(evento) {
+    var archivo = evento.target.files && evento.target.files[0];
+    if (!archivo) return;
+    procesarArchivoListado(archivo);
     evento.target.value = '';
   }
 
   // ───────────────── Cola de pendientes de compras ─────────────────
 
+  function aplicarFiltroRevision(lista) {
+    if (filtroRevision === 'sin-codigo') {
+      return lista.filter(function (p) { return p.estado === 'sin-codigo'; });
+    }
+    if (filtroRevision === 'codigo-invalido') {
+      return lista.filter(function (p) { return p.estado === 'codigo-invalido'; });
+    }
+    if (filtroRevision === 'con-sugerencia') {
+      return lista.filter(function (p) { return !!p.sugerencia; });
+    }
+    if (filtroRevision === 'fila-incompleta') {
+      return lista.filter(function (p) {
+        return p.estado !== 'sin-codigo' && p.estado !== 'codigo-invalido';
+      });
+    }
+    return lista;
+  }
+
   function refrescarRevision() {
     var e = window.Revision.estadisticas();
     el['metricas-revision'].innerHTML =
-      metrica(e.total, 'Pendientes') +
-      metrica(e.sinCodigo, 'Sin codigo en el listado') +
-      metrica(e.invalidos, 'Codigo que no es GTIN') +
+      metrica(e.total, 'Pendientes', e.total > 0 ? 'aviso' : 'ok') +
+      metrica(e.sinCodigo, 'Sin código en el listado') +
+      metrica(e.invalidos, 'Código que no es GTIN') +
       metrica(e.incompletas, 'Filas incompletas');
 
-    var lista = window.Revision.buscarTexto(el['busqueda-revision'].value);
+    var consulta = el['busqueda-revision'].value;
+    var lista = aplicarFiltroRevision(window.Revision.buscarTexto(consulta));
     lista.sort(function (a, b) { return a.sku.localeCompare(b.sku, 'es'); });
 
     var pagina = pagRevision.recortar(lista);
 
     el['cuerpo-revision'].innerHTML = pagina.map(function (p) {
       return '<tr>' +
-        '<td class="mono" data-etiqueta="SKU">' + escapar(p.sku) + '</td>' +
-        '<td class="celda-principal" data-etiqueta="Descripcion">' + (p.descripcion
+        '<td class="mono" data-etiqueta="SKU">' + botonCopiar(p.sku, 'SKU') + '</td>' +
+        '<td class="celda-principal" data-etiqueta="Descripción">' + (p.descripcion
             ? escapar(p.descripcion)
-            : '<span class="ayuda">sin descripcion en el listado</span>') +
+            : '<span class="ayuda">sin descripción en el listado</span>') +
           (p.proveedor ? '<br><span class="ayuda">' + escapar(p.proveedor) + '</span>' : '') +
         '</td>' +
         '<td class="celda-ancha" data-etiqueta="Problema">' +
@@ -1278,17 +1510,17 @@
             ? '<div class="ayuda">En el reporte: <code>' + escapar(p.codigoEnElReporte) + '</code></div>'
             : '') +
           (p.sugerencia
-            ? '<div class="ayuda">Corrigiendo el verificador seria <code>' +
-              escapar(p.sugerencia) + '</code>. Comparalo con el empaque antes de usarlo.</div>'
+            ? '<div class="ayuda">Corrigiendo el verificador sería <code>' +
+              escapar(p.sugerencia) + '</code>. Compáralo con el empaque antes de usarlo.</div>'
             : '') +
         '</td>' +
         '<td class="num col-media" data-etiqueta="Precio">' + (p.precio === null
-            ? '<span class="ayuda">-</span>'
+            ? '<span class="ayuda">—</span>'
             : escapar(dinero(p.precio))) + '</td>' +
         '<td class="num celda-acciones"><div class="tabla-acciones">' +
-          '<button class="btn btn-primario btn-pequeno" data-revision-escanear="' +
-            escapar(p.sku) + '">Escanear</button>' +
-          '<button class="btn btn-plano btn-pequeno" data-revision-quitar="' +
+          '<button type="button" class="btn btn-primario btn-pequeno" data-revision-escanear="' +
+            escapar(p.sku) + '">' + ICONOS.escaner + ' Escanear</button>' +
+          '<button type="button" class="btn btn-plano btn-pequeno" data-revision-quitar="' +
             escapar(p.sku) + '">Descartar</button>' +
         '</div></td>' +
       '</tr>';
@@ -1296,24 +1528,70 @@
 
     pagRevision.pintar();
     el['sin-revision'].classList.toggle('oculto', lista.length > 0);
+    var hayFiltro = !!(consulta.trim() || filtroRevision !== 'todos');
+    var msgRev = el['sin-revision'].querySelector('p');
+    if (msgRev) {
+      msgRev.textContent = e.total === 0
+        ? 'No hay ningún pendiente de compras por resolver.'
+        : 'No hay pendientes que coincidan con el filtro o la búsqueda.';
+    }
+    if (el['btn-limpiar-filtros-revision']) {
+      el['btn-limpiar-filtros-revision'].classList.toggle('oculto', !hayFiltro || e.total === 0);
+    }
+    pintarEstadoTabla();
   }
 
   var revisionAbierta = null;
 
+  function textoAyudaRevision(p) {
+    return p && p.sugerencia
+      ? 'El listado da para proponer ' + p.sugerencia + ', pero eso es un cálculo. Lee el empaque.'
+      : 'Dispara el lector sobre el empaque del producto.';
+  }
+
+  function informarCodigoRevision() {
+    var p = revisionAbierta ? window.Revision.buscar(revisionAbierta) : null;
+    var valor = el['revision-codigo'].value;
+    if (!valor.trim()) {
+      el['revision-aviso'].style.color = '';
+      el['revision-aviso'].textContent = textoAyudaRevision(p);
+      return;
+    }
+    var v = window.Barcode.validar(valor);
+    if (!v.valido) {
+      el['revision-aviso'].style.color = 'var(--error)';
+      el['revision-aviso'].textContent = v.tipo.nombre + ' — ' + v.motivo;
+      return;
+    }
+    if (!v.tipo.gtin) {
+      el['revision-aviso'].style.color = 'var(--error)';
+      el['revision-aviso'].textContent = 'Un código de ' + v.codigo.length + ' dígitos no es un código de barras de producto.';
+      return;
+    }
+    var ocupado = window.SKU.buscarPorCodigo(v.codigo);
+    if (ocupado && (!p || ocupado.sku.sku !== p.sku)) {
+      el['revision-aviso'].style.color = 'var(--error)';
+      el['revision-aviso'].textContent = 'Ya está vinculado al SKU ' + ocupado.sku.sku + ' (' + ocupado.sku.nombre + ').';
+      return;
+    }
+    el['revision-aviso'].style.color = 'var(--ok)';
+    el['revision-aviso'].textContent = v.tipo.nombre + ' válido (' + window.Barcode.nivelProbable(v.codigo) + ').';
+  }
+
   function abrirRevision(sku) {
     var p = window.Revision.buscar(sku);
-    if (!p) { avisar('Ese pendiente ya no esta en la cola', 'error'); return; }
+    if (!p) { avisar('Ese pendiente ya no está en la cola', 'error'); return; }
 
     revisionAbierta = p.sku;
     el['revision-detalle'].innerHTML =
-      'SKU <code>' + escapar(p.sku) + '</code>' +
+      '<span><strong>SKU <code>' + escapar(p.sku) + '</code></strong>' +
       (p.descripcion ? ' — ' + escapar(p.descripcion) : '') +
-      (p.precio !== null ? '<br>Precio del listado: ' + escapar(dinero(p.precio)) : '') +
-      '<br>' + escapar(p.motivo);
+      (p.precio !== null ? '<br>Precio del listado: <strong>' + escapar(dinero(p.precio)) + '</strong>' : '') +
+      (p.codigoEnElReporte ? '<br>En el reporte: <code>' + escapar(p.codigoEnElReporte) + '</code>' : '') +
+      '<br><span class="ayuda">' + escapar(p.motivo) + '</span></span>';
     el['revision-codigo'].value = '';
-    el['revision-aviso'].textContent = p.sugerencia
-      ? 'El listado da para proponer ' + p.sugerencia + ', pero eso es un calculo. Lee el empaque.'
-      : 'Dispara el lector sobre el empaque del producto.';
+    el['revision-aviso'].style.color = '';
+    el['revision-aviso'].textContent = textoAyudaRevision(p);
     el['dialogo-revision'].showModal();
     setTimeout(function () { el['revision-codigo'].focus(); }, 50);
   }
@@ -1323,27 +1601,34 @@
     if (!revisionAbierta) return;
 
     var r = window.Revision.resolverConCodigo(revisionAbierta, el['revision-codigo'].value);
-    if (!r.ok) { el['revision-aviso'].textContent = r.error; return; }
+    if (!r.ok) {
+      el['revision-aviso'].textContent = r.error;
+      el['revision-aviso'].style.color = 'var(--error)';
+      return;
+    }
 
     el['dialogo-revision'].close();
-    avisar('Codigo ' + r.entrada.codigo + ' vinculado al SKU ' + r.sku.sku, 'ok');
+    avisar('Código ' + r.entrada.codigo + ' vinculado al SKU ' + r.sku.sku, 'ok');
     revisionAbierta = null;
     refrescarRevision();
     refrescarSkus();
-    // Si ese mismo codigo esta en pantalla, ahora si tiene SKU y precio.
     if (codigoEnCurso) pintarBloqueSku(window.Barcode.validar(codigoEnCurso));
   }
 
   function quitarRevision(sku) {
     var p = window.Revision.buscar(sku);
     if (!p) return;
-    if (!window.confirm(
-      'Descartar el pendiente ' + p.sku + (p.descripcion ? ' (' + p.descripcion + ')' : '') + '?\n\n' +
-      'Sale de la cola y el producto queda sin registrar. Vuelve a aparecer si se ' +
-      'carga otra vez un listado que lo traiga igual.'
-    )) return;
-    window.Revision.quitar(sku);
-    refrescarRevision();
+    window.UI.confirmar({
+      titulo: 'Descartar pendiente',
+      mensaje: '¿Descartar el pendiente ' + p.sku + (p.descripcion ? ' (' + p.descripcion + ')' : '') + '?',
+      detalle: 'Sale de la cola y el producto queda sin registrar. Volverá a aparecer si se carga otro listado igual.',
+      textoConfirmar: 'Descartar'
+    }).then(function (ok) {
+      if (!ok) return;
+      window.Revision.quitar(sku);
+      avisar('Pendiente descartado', 'ok');
+      refrescarRevision();
+    });
   }
 
   // ───────────────── Importar / exportar ─────────────────
@@ -1353,18 +1638,22 @@
     if (!archivo) return;
     var lector = new FileReader();
     lector.onload = function () {
-      var reemplazar = window.confirm(
-        'Reemplazar toda la base con el contenido del archivo?\n\n' +
-        'Aceptar = reemplazar.  Cancelar = agregar o actualizar sin borrar lo existente.'
-      );
-      var r = window.DB.importar(String(lector.result), reemplazar);
-      if (!r.ok) { avisar(r.error, 'error'); return; }
-      avisar(r.agregados + ' agregados, ' + r.actualizados + ' actualizados' +
-             (r.rechazados.length ? ', ' + r.rechazados.length + ' rechazados' : ''), 'ok');
-      if (r.rechazados.length) {
-        console.warn('Codigos rechazados en la importacion:', r.rechazados);
-      }
-      refrescarProductos();
+      var contenido = String(lector.result);
+      window.UI.elegirImportacion({
+        titulo: 'Importar caché de productos',
+        mensaje: 'Archivo: ' + archivo.name + '. Elige cómo aplicar los datos:'
+      }).then(function (modo) {
+        if (!modo) return;
+        var reemplazar = modo === 'reemplazar';
+        var r = window.DB.importar(contenido, reemplazar);
+        if (!r.ok) { avisar(r.error, 'error'); return; }
+        avisar(r.agregados + ' agregados, ' + r.actualizados + ' actualizados' +
+               (r.rechazados.length ? ', ' + r.rechazados.length + ' rechazados' : ''), 'ok');
+        if (r.rechazados.length) {
+          console.warn('Códigos rechazados en la importación:', r.rechazados);
+        }
+        refrescarProductos();
+      });
     };
     lector.readAsText(archivo);
     evento.target.value = '';
@@ -1372,18 +1661,21 @@
 
   function vaciar() {
     var total = window.DB.todos().length;
-    if (!total) { avisar('La cache ya esta vacia', 'ok'); return; }
-    if (!window.confirm(
-      'Vaciar la cache de ' + total + ' productos?\n\n' +
-      'Los nombres que vinieron de las fuentes se vuelven a consultar al leerlos. ' +
-      'Los que escribiste tu se pierden; exportalos antes si los necesitas.'
-    )) return;
-    window.DB.vaciarCache();
-    avisar('Cache vacia', 'ok');
-    refrescarProductos();
+    if (!total) { avisar('La caché ya está vacía', 'ok'); return; }
+    window.UI.confirmar({
+      titulo: 'Vaciar caché de productos',
+      mensaje: '¿Vaciar la caché de ' + total + ' productos?',
+      detalle: 'Los nombres que vinieron de las fuentes se vuelven a consultar al leerlos. Los que escribiste tú se pierden; expórtalos antes si los necesitas.',
+      textoConfirmar: 'Vaciar caché'
+    }).then(function (ok) {
+      if (!ok) return;
+      window.DB.vaciarCache();
+      avisar('Caché vacía', 'ok');
+      refrescarProductos();
+    });
   }
 
-  // ───────────────── Pestanas ─────────────────
+  // ───────────────── Pestañas y navegación ─────────────────
 
   function cambiarVista(nombre) {
     document.querySelectorAll('.pestana').forEach(function (b) {
@@ -1397,6 +1689,20 @@
     if (nombre === 'escanear') el['entrada-codigo'].focus();
   }
 
+  function sincronizarChipsFiltro(contenedor, atributo, valorActivo) {
+    if (!contenedor) return;
+    contenedor.querySelectorAll('[' + atributo + ']').forEach(function (btn) {
+      btn.classList.toggle('activo', btn.getAttribute(atributo) === valorActivo);
+    });
+  }
+
+  function irAEscanearConCodigo(codigo) {
+    if (!codigo) return;
+    cambiarVista('escanear');
+    el['entrada-codigo'].value = codigo;
+    procesarCodigo(codigo, 'consulta directa');
+  }
+
   // ───────────────── Arranque ─────────────────
 
   function conectarEventos() {
@@ -1404,10 +1710,19 @@
       if (el['entrada-codigo'].value.trim()) procesarCodigo(el['entrada-codigo'].value, 'manual');
     };
 
+    el['entrada-codigo'].addEventListener('input', actualizarLimpiarCodigo);
+    if (el['btn-limpiar-codigo']) {
+      el['btn-limpiar-codigo'].onclick = function () {
+        el['entrada-codigo'].value = '';
+        actualizarLimpiarCodigo();
+        el['entrada-codigo'].focus();
+      };
+    }
+
     el['entrada-codigo'].addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (el['entrada-codigo'].value.trim()) procesarCodigo(el['entrada-codigo'].value, 'escaner o manual');
+        if (el['entrada-codigo'].value.trim()) procesarCodigo(el['entrada-codigo'].value, 'escáner o manual');
       }
     });
 
@@ -1415,37 +1730,110 @@
     el['form-alta'].onsubmit = guardarAlta;
     el['btn-cancelar-alta'].onclick = function () { el['panel-alta'].hidden = true; };
 
-    // Al cambiar la busqueda se vuelve a la primera pagina: quedarse en la
-    // pagina 7 de un resultado de dos filas no muestra nada.
+    // Copiado al portapapeles delegado para cualquier código o SKU.
+    document.body.addEventListener('click', function (e) {
+      var btnCopiar = e.target.closest('[data-copiar]');
+      if (btnCopiar) {
+        var texto = btnCopiar.getAttribute('data-copiar');
+        window.UI.copiar(texto).then(function (ok) {
+          if (ok) avisar('Copiado: ' + texto, 'ok');
+        });
+        return;
+      }
+
+      var btnCerrarModal = e.target.closest('[data-cerrar-dialogo]');
+      if (btnCerrarModal) {
+        var idDlg = btnCerrarModal.getAttribute('data-cerrar-dialogo');
+        var dlg = document.getElementById(idDlg);
+        if (idDlg === 'dialogo-revision') revisionAbierta = null;
+        if (dlg && dlg.open) dlg.close();
+      }
+    });
+
+    // Atajo F2 (o '/' fuera de inputs) para volver al campo de escaneo.
+    document.addEventListener('keydown', function (e) {
+      var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      var enCampo = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      if (e.key === 'F2' || (e.key === '/' && !enCampo && !document.querySelector('dialog[open]'))) {
+        e.preventDefault();
+        cambiarVista('escanear');
+        el['entrada-codigo'].focus();
+        el['entrada-codigo'].select();
+      }
+    });
+
+    // ---- Vista de productos ----
     el['busqueda-productos'].oninput = function () {
       pagProductos.reiniciar();
       refrescarProductos();
     };
+    if (el['filtros-productos']) {
+      el['filtros-productos'].addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-filtro-producto]');
+        if (!btn) return;
+        filtroProducto = btn.dataset.filtroProducto;
+        sincronizarChipsFiltro(el['filtros-productos'], 'data-filtro-producto', filtroProducto);
+        pagProductos.reiniciar();
+        refrescarProductos();
+      });
+    }
+    if (el['btn-limpiar-filtros-productos']) {
+      el['btn-limpiar-filtros-productos'].onclick = function () {
+        el['busqueda-productos'].value = '';
+        filtroProducto = 'todos';
+        sincronizarChipsFiltro(el['filtros-productos'], 'data-filtro-producto', 'todos');
+        pagProductos.reiniciar();
+        refrescarProductos();
+      };
+    }
+
     el['btn-nuevo'].onclick = function () { abrirDialogo(null); };
     el['btn-exportar-json'].onclick = function () {
       descargar('productos.json', window.DB.exportarJson(), 'application/json');
     };
     el['btn-exportar-csv'].onclick = function () {
-      descargar('productos.csv', '﻿' + window.DB.exportarCsv(), 'text/csv;charset=utf-8');
+      descargar('productos.csv', '\ufeff' + window.DB.exportarCsv(), 'text/csv;charset=utf-8');
     };
     el['entrada-importar'].onchange = importarArchivo;
     el['btn-vaciar'].onclick = vaciar;
 
     el['cuerpo-productos'].addEventListener('click', function (e) {
+      var consultar = e.target.closest('[data-consultar]');
+      if (consultar) { irAEscanearConCodigo(consultar.dataset.consultar); return; }
       var editar = e.target.closest('[data-editar]');
       if (editar) { abrirDialogo(window.DB.buscar(editar.dataset.editar)); return; }
       var borrarBtn = e.target.closest('[data-borrar]');
       if (borrarBtn) borrar(borrarBtn.dataset.borrar);
     });
 
-    // ---- Vista y dialogos de SKU ----
+    // ---- Vista y diálogos de SKU ----
     el['busqueda-skus'].oninput = function () {
       pagSkus.reiniciar();
       refrescarSkus();
     };
+    if (el['filtros-skus']) {
+      el['filtros-skus'].addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-filtro-sku]');
+        if (!btn) return;
+        filtroSku = btn.dataset.filtroSku;
+        sincronizarChipsFiltro(el['filtros-skus'], 'data-filtro-sku', filtroSku);
+        pagSkus.reiniciar();
+        refrescarSkus();
+      });
+    }
+    if (el['btn-limpiar-filtros-sku']) {
+      el['btn-limpiar-filtros-sku'].onclick = function () {
+        el['busqueda-skus'].value = '';
+        filtroSku = 'todos';
+        sincronizarChipsFiltro(el['filtros-skus'], 'data-filtro-sku', 'todos');
+        pagSkus.reiniciar();
+        refrescarSkus();
+      };
+    }
+
     el['btn-sku-nuevo'].onclick = function () { abrirDialogoSku(null); };
     el['btn-sku-exportar-csv'].onclick = function () {
-      descargar('skus.csv', '﻿' + window.SKU.exportarCsv(), 'text/csv;charset=utf-8');
+      descargar('skus.csv', '\ufeff' + window.SKU.exportarCsv(), 'text/csv;charset=utf-8');
     };
     el['btn-sku-exportar-json'].onclick = function () {
       descargar('skus.json', window.SKU.exportarJson(), 'application/json');
@@ -1462,8 +1850,8 @@
       }
       var editar = e.target.closest('[data-sku-editar]');
       if (editar) { abrirDialogoSku(window.SKU.buscarSku(editar.dataset.skuEditar)); return; }
-      var borrar = e.target.closest('[data-sku-borrar]');
-      if (borrar) { borrarSku(borrar.dataset.skuBorrar); return; }
+      var borrarBtn = e.target.closest('[data-sku-borrar]');
+      if (borrarBtn) { borrarSku(borrarBtn.dataset.skuBorrar); return; }
       var quitar = e.target.closest('[data-desvincular]');
       if (quitar) quitarVinculo(quitar.dataset.desvincular);
     });
@@ -1476,15 +1864,12 @@
     el['vinc-sku-buscar'].oninput = filtrarSelectSku;
     el['vinc-codigo'].oninput = informarCodigoVinculo;
     el['vinc-codigo'].addEventListener('keydown', function (e) {
-      // El escaner USB manda Enter al final. Aqui ese Enter no envia el
-      // formulario: pasa al campo de la cantidad, que es lo que falta contar.
       if (e.key !== 'Enter') return;
       e.preventDefault();
       informarCodigoVinculo();
       el['vinc-cantidad'].focus();
     });
     el['vinc-nivel'].onchange = function () {
-      // Al pasar a un empaque, la cantidad se vacia: hay que contarla.
       if (el['vinc-nivel'].value === 'unidad') el['vinc-cantidad'].value = 1;
       else if (el['vinc-nivel'].value === 'variable') el['vinc-cantidad'].value = '';
       else if (Number(el['vinc-cantidad'].value) <= 1) el['vinc-cantidad'].value = '';
@@ -1494,15 +1879,62 @@
     el['btn-cerrar-dialogo'].onclick = function () { el['dialogo-editar'].close(); };
     el['editar-codigo'].oninput = validarCodigoEnVivo;
 
+    // ---- Historial ----
+    if (el['busqueda-historial']) {
+      el['busqueda-historial'].oninput = function () {
+        pagHistorial.reiniciar();
+        refrescarHistorial();
+      };
+    }
+    if (el['filtros-historial']) {
+      el['filtros-historial'].addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-filtro-historial]');
+        if (!btn) return;
+        filtroHistorial = btn.dataset.filtroHistorial;
+        sincronizarChipsFiltro(el['filtros-historial'], 'data-filtro-historial', filtroHistorial);
+        pagHistorial.reiniciar();
+        refrescarHistorial();
+      });
+    }
+    el['cuerpo-historial'].addEventListener('click', function (e) {
+      var btnVer = e.target.closest('[data-historial-ver]');
+      if (btnVer) irAEscanearConCodigo(btnVer.dataset.historialVer);
+    });
+
     el['btn-limpiar-historial'].onclick = function () {
-      if (!window.confirm('Borrar todo el historial de lecturas?')) return;
-      window.DB.limpiarHistorial();
-      refrescarHistorial();
-      avisar('Historial vacio', 'ok');
+      var total = window.DB.obtenerHistorial().length;
+      if (!total) { avisar('El historial ya está vacío', 'ok'); return; }
+      window.UI.confirmar({
+        titulo: 'Limpiar historial de lecturas',
+        mensaje: '¿Borrar todo el historial de ' + total + ' lecturas de este equipo?',
+        detalle: 'Solo se borra el registro de lecturas recientes; no afecta ni los SKU ni la caché.',
+        textoConfirmar: 'Limpiar historial'
+      }).then(function (ok) {
+        if (!ok) return;
+        window.DB.limpiarHistorial();
+        refrescarHistorial();
+        avisar('Historial vacío', 'ok');
+      });
     };
 
     // ── Listado de precios ──
     el['entrada-listado'].onchange = importarListado;
+    if (el['zona-listado']) {
+      el['zona-listado'].addEventListener('dragover', function (e) {
+        e.preventDefault();
+        el['zona-listado'].classList.add('arrastrando');
+      });
+      el['zona-listado'].addEventListener('dragleave', function () {
+        el['zona-listado'].classList.remove('arrastrando');
+      });
+      el['zona-listado'].addEventListener('drop', function (e) {
+        e.preventDefault();
+        el['zona-listado'].classList.remove('arrastrando');
+        var archivo = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (archivo) procesarArchivoListado(archivo);
+      });
+    }
+
     el['btn-listado-pegar'].onclick = function () {
       el['campo-listado-texto'].classList.toggle('oculto');
       if (!el['campo-listado-texto'].classList.contains('oculto')) el['listado-texto'].focus();
@@ -1517,13 +1949,34 @@
       pagRevision.reiniciar();
       refrescarRevision();
     };
+    if (el['filtros-revision']) {
+      el['filtros-revision'].addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-filtro-revision]');
+        if (!btn) return;
+        filtroRevision = btn.dataset.filtroRevision;
+        sincronizarChipsFiltro(el['filtros-revision'], 'data-filtro-revision', filtroRevision);
+        pagRevision.reiniciar();
+        refrescarRevision();
+      });
+    }
+    if (el['btn-limpiar-filtros-revision']) {
+      el['btn-limpiar-filtros-revision'].onclick = function () {
+        el['busqueda-revision'].value = '';
+        filtroRevision = 'todos';
+        sincronizarChipsFiltro(el['filtros-revision'], 'data-filtro-revision', 'todos');
+        pagRevision.reiniciar();
+        refrescarRevision();
+      };
+    }
+
     el['cuerpo-revision'].addEventListener('click', function (e) {
-      var escanear = e.target.getAttribute('data-revision-escanear');
-      var quitar = e.target.getAttribute('data-revision-quitar');
-      if (escanear) abrirRevision(escanear);
-      if (quitar) quitarRevision(quitar);
+      var btnEscanear = e.target.closest('[data-revision-escanear]');
+      var btnQuitar = e.target.closest('[data-revision-quitar]');
+      if (btnEscanear) abrirRevision(btnEscanear.dataset.revisionEscanear);
+      if (btnQuitar) quitarRevision(btnQuitar.dataset.revisionQuitar);
     });
     el['form-revision'].onsubmit = guardarRevision;
+    el['revision-codigo'].oninput = informarCodigoRevision;
     el['btn-cerrar-revision'].onclick = function () {
       revisionAbierta = null;
       el['dialogo-revision'].close();
@@ -1534,22 +1987,25 @@
     };
     el['btn-revision-vaciar'].onclick = function () {
       var total = window.Revision.todos().length;
-      if (!total) { avisar('La cola ya esta vacia', 'ok'); return; }
-      if (!window.confirm(
-        'Vaciar la cola de ' + total + ' pendientes?\n\n' +
-        'Se pierde la lista de lo que falta resolver. Los productos siguen sin ' +
-        'registrar, solo deja de verse que faltan. Exportala antes si la necesitas.'
-      )) return;
-      window.Revision.vaciar();
-      refrescarRevision();
-      avisar('Cola vacia', 'ok');
+      if (!total) { avisar('La cola ya está vacía', 'ok'); return; }
+      window.UI.confirmar({
+        titulo: 'Vaciar cola de pendientes',
+        mensaje: '¿Vaciar la cola de ' + total + ' pendientes?',
+        detalle: 'Se pierde la lista de lo que falta resolver. Los productos siguen sin registrar, solo deja de verse que faltan. Expórtala antes si la necesitas.',
+        textoConfirmar: 'Vaciar cola'
+      }).then(function (ok) {
+        if (!ok) return;
+        window.Revision.vaciar();
+        refrescarRevision();
+        avisar('Cola vacía', 'ok');
+      });
     };
 
     document.querySelectorAll('.pestana').forEach(function (b) {
       b.onclick = function () { cambiarVista(b.dataset.vista); };
     });
 
-    // Escaner USB con el foco fuera del campo: se capta igual.
+    // Escáner USB con el foco fuera del campo: se capta igual.
     window.Scanner.escucharTeclado({
       onLectura: function (codigo, fuente) {
         cambiarVista('escanear');
@@ -1561,9 +2017,6 @@
 
   function iniciar() {
     cachearElementos();
-
-    // Tema claro/oscuro: el atributo ya lo puso el script del <head>; aqui se
-    // conecta el boton y se sigue al sistema mientras nadie elija.
     window.UI.iniciarTema();
 
     pagProductos = window.UI.paginador('pag-productos', refrescarProductos);
@@ -1573,14 +2026,12 @@
 
     conectarEventos();
 
-
-    // Estado real del servidor: dice si la fuente oficial de GS1 esta disponible.
     window.DB.estadoConsulta().then(function (estadoServidor) {
       if (!estadoServidor) {
         el['estado-fuentes'].innerHTML =
           '<span class="pildora pildora-error">Sin servidor de consulta</span> ' +
-          'Arranca <code>node server.js</code> y abre la pagina desde http://localhost. ' +
-          'Sin el no se puede consultar ningun nombre.';
+          'Arranca <code>node server.js</code> y abre la página desde http://localhost. ' +
+          'Sin él no se puede consultar ningún nombre.';
         return;
       }
       el['estado-fuentes'].innerHTML = estadoServidor.gs1Configurado
@@ -1595,15 +2046,10 @@
       if (!infoSku.almacenamientoOk) {
         avisar('No se puede guardar la tabla de SKU en este navegador (almacenamiento bloqueado).', 'error');
       }
-      // La cola de pendientes se lee despues de la tabla: resolver un
-      // pendiente escribe en los dos lados.
       return window.Revision.iniciar();
     }).then(function () {
-      // Y encima de las dos, la tabla del servidor, que manda sobre la copia
-      // local cuando esta disponible.
       return window.Sincronizar.iniciar({
         alCambiar: function () {
-          // Cambio algo en otra caja: se vuelve a pintar lo que esta a la vista.
           refrescarSkus();
           refrescarRevision();
           pintarEstadoTabla();
@@ -1624,7 +2070,7 @@
       refrescarHistorial();
 
       if (!info.almacenamientoOk) {
-        avisar('No se puede guardar en este navegador (almacenamiento bloqueado). La cache se perdera al recargar.', 'error');
+        avisar('No se puede guardar en este navegador (almacenamiento bloqueado). La caché se perderá al recargar.', 'error');
       }
 
       var problema = window.Scanner.diagnostico();

@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
-<title>Lector de codigos de barras</title>
+<title>Lector de códigos de barras</title>
 <link rel="stylesheet" href="css/styles.css">
 <script>
 /* El tema se fija antes de pintar: si se esperara a ui.js, la primera imagen
@@ -25,47 +25,49 @@
 <header class="barra">
   <div class="marca">
     <span class="marca-icono" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M3 5v14M6.5 5v14M10 5v14M13.5 5v10M17 5v14M20.5 5v14"/>
       </svg>
     </span>
-    <div>
-      <h1>Lector de codigos</h1>
-      <p class="marca-sub">Escanea, identifica y cruza con la tabla de la empresa</p>
+    <div class="marca-texto">
+      <h1>Lector de códigos</h1>
+      <p class="marca-sub">Identificación y cruce con tabla de SKU</p>
     </div>
   </div>
 
-  <nav class="pestanas" role="tablist" aria-label="Modulos">
+  <nav class="pestanas" role="tablist" aria-label="Módulos">
     <button class="pestana activa" data-vista="escanear" role="tab" aria-selected="true">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
         <path d="M7 8v8M10.5 8v8M14 8v8M17 8v8"/>
       </svg>
       <span class="pestana-texto">Escanear</span>
     </button>
     <button class="pestana" data-vista="skus" role="tab" aria-selected="false">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h6.9a2 2 0 0 1 1.4.6l7.5 7.5a2 2 0 0 1 0 2.8z"/>
         <circle cx="7.5" cy="7.5" r="1.3"/>
       </svg>
       <span class="pestana-texto">SKU</span>
+      <span id="badge-skus" class="pestana-badge oculto" aria-label="SKU registrados"></span>
     </button>
     <button class="pestana" data-vista="listado" role="tab" aria-selected="false">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
         <path d="M14 3v5h5M9 13h6M9 17h4"/>
       </svg>
       <span class="pestana-texto">Listado</span>
+      <span id="badge-pendientes" class="pestana-badge pestana-badge-aviso oculto" title="Pendientes de compras por escanear"></span>
     </button>
     <button class="pestana" data-vista="productos" role="tab" aria-selected="false">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 8 12 3 3 8l9 5 9-5z"/>
         <path d="M3 8v8l9 5 9-5V8M12 13v8"/>
       </svg>
       <span class="pestana-texto">Productos</span>
     </button>
     <button class="pestana" data-vista="historial" role="tab" aria-selected="false">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
         <path d="M12 7v5l3.5 2"/>
       </svg>
@@ -74,6 +76,9 @@
   </nav>
 
   <div class="barra-acciones">
+    <span id="indicador-red" class="pildora indicador-red" title="Estado de la tabla compartida">
+      <span class="indicador-red-texto">Conectando…</span>
+    </span>
     <button id="btn-tema" class="btn-tema" type="button" aria-label="Cambiar el tema">
       <svg class="icono-luna" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
@@ -92,65 +97,81 @@
 <section id="vista-escanear" class="vista activa" role="tabpanel" aria-label="Escanear">
 
   <div class="barra-estados">
-    <p id="estado-fuentes" class="estado-fuentes">Comprobando las fuentes de consulta...</p>
-    <p id="estado-tabla" class="estado-fuentes">Buscando la tabla del servidor...</p>
+    <p id="estado-fuentes" class="estado-fuentes">Comprobando las fuentes de consulta…</p>
+    <p id="estado-tabla" class="estado-fuentes">Buscando la tabla del servidor…</p>
   </div>
 
   <div class="rejilla-escaner">
 
-    <div class="tarjeta">
+    <div class="tarjeta tarjeta-escaner">
       <div class="tarjeta-cabecera">
         <h2>
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <path d="M3 5v14M6.5 5v14M10 5v14M13.5 5v10M17 5v14M20.5 5v14"/>
           </svg>
-          Entrada del codigo
+          Entrada del código
         </h2>
         <span id="estado-escaner" class="pildora">Listo</span>
       </div>
 
       <label class="campo">
-        <span class="campo-etiqueta">Codigo de barras</span>
+        <span class="campo-etiqueta">
+          Código de barras
+          <kbd class="atajo" title="Atajo para enfocar">F2</kbd>
+        </span>
         <div class="campo-grupo">
-          <input id="entrada-codigo" type="text" inputmode="numeric" autocomplete="off"
-                 placeholder="13 digitos, sin espacios" aria-describedby="ayuda-codigo">
-          <button id="btn-buscar" class="btn btn-primario">Buscar</button>
+          <div class="entrada-con-limpiar">
+            <input id="entrada-codigo" type="text" inputmode="numeric" autocomplete="off"
+                   placeholder="13 dígitos, sin espacios" aria-describedby="ayuda-codigo">
+            <button id="btn-limpiar-codigo" class="btn-limpiar-input oculto" type="button" aria-label="Limpiar código" title="Limpiar">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <button id="btn-buscar" class="btn btn-primario" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+            </svg>
+            <span>Buscar</span>
+          </button>
         </div>
       </label>
-      <p id="ayuda-codigo" class="ayuda">El lector USB escribe solo y manda Enter.</p>
+      <p id="ayuda-codigo" class="ayuda">El lector USB escribe directo y envía Enter, incluso sin enfocar este campo.</p>
 
-      <div class="separador"><span>o</span></div>
+      <div class="separador"><span>o con cámara</span></div>
 
-      <button id="btn-camara" class="btn btn-secundario ancho">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <button id="btn-camara" class="btn btn-secundario ancho" type="button">
+        <svg id="btn-camara-icono" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
           <circle cx="12" cy="13" r="4"/>
         </svg>
-        Usar la camara
+        <span id="btn-camara-texto">Usar la cámara</span>
       </button>
 
       <div id="camara-envoltorio" class="camara oculto">
         <video id="video" playsinline muted></video>
         <div class="camara-guia" aria-hidden="true"></div>
+        <span class="camara-etiqueta" aria-hidden="true">Encuadra las barras aquí</span>
       </div>
       <p id="aviso-camara" class="nota nota-aviso oculto"></p>
 
-      <details class="detalle">
+      <details class="detalle detalle-compacto">
         <summary>
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
           </svg>
-          La camara pide HTTPS
+          La cámara pide HTTPS
         </summary>
         <div class="detalle-cuerpo">
           <p>
-            El navegador solo entrega la camara en un contexto seguro. Abre la
-            pagina por <code>https://</code> o en <code>localhost</code>; por
-            <code>http://</code> con la IP del equipo el boton queda apagado.
+            El navegador solo entrega la cámara en un contexto seguro. Abre la
+            página por <code>https://</code> o en <code>localhost</code>; por
+            <code>http://</code> con la IP del equipo el botón queda apagado.
           </p>
           <p>
             <code>node server.js</code> ya sirve HTTPS en el puerto 8443 con el
-            certificado de <code>cert/</code>. Al ser propio, el telefono avisa
+            certificado de <code>cert/</code>. Al ser propio, el teléfono avisa
             una vez: hay que aceptarlo.
           </p>
         </div>
@@ -158,7 +179,7 @@
 
     </div>
 
-    <div class="tarjeta" id="panel-resultado">
+    <div class="tarjeta tarjeta-resultado" id="panel-resultado">
       <div class="tarjeta-cabecera">
         <h2>
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -166,42 +187,60 @@
           </svg>
           Resultado
         </h2>
-      </div>
-      <div id="resultado" class="resultado-vacio">
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path d="M3 5v14M7 5v14M11 5v14M15 5v9M19 5v14"/>
-        </svg>
-        <p>Esperando una lectura</p>
+        <span id="resultado-codigo-badge" class="pildora sin-punto mono oculto"></span>
       </div>
 
-      <!-- Verificacion contra la tabla de SKU de la empresa: a que producto
-           interno pertenece el codigo leido, y cuantas unidades trae ese empaque. -->
-      <div id="bloque-sku"></div>
+      <div class="resultado-flujo">
+        <!-- Verificación contra la tabla de SKU de la empresa -->
+        <div id="bloque-sku"></div>
+
+        <div id="resultado" class="resultado-vacio">
+          <div class="resultado-vacio-icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M3 5v14M7 5v14M11 5v14M15 5v9M19 5v14"/>
+            </svg>
+          </div>
+          <div>
+            <p class="resultado-vacio-titulo">Esperando una lectura</p>
+            <p class="ayuda">Dispara el escáner USB, escribe un código o activa la cámara para ver el precio, empaque y descripción.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
 
-  <div class="tarjeta" id="panel-alta" hidden>
+  <div class="tarjeta tarjeta-alta" id="panel-alta" hidden>
     <div class="tarjeta-cabecera">
-      <h2>Ponerle nombre tu mismo</h2>
+      <h2>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+        </svg>
+        Ponerle nombre tú mismo
+      </h2>
       <span class="pildora pildora-aviso">Ninguna fuente lo tiene</span>
     </div>
     <form id="form-alta" class="formulario">
-      <label class="campo">
-        <span class="campo-etiqueta">Codigo</span>
-        <input id="alta-codigo" type="text" readonly>
+      <label class="campo campo-corto">
+        <span class="campo-etiqueta">Código</span>
+        <input id="alta-codigo" type="text" class="mono" readonly>
+      </label>
+      <label class="campo campo-corto">
+        <span class="campo-etiqueta">Categoría</span>
+        <input id="alta-categoria" type="text" list="lista-categorias" placeholder="Alimentos">
+        <datalist id="lista-categorias"></datalist>
       </label>
       <label class="campo">
         <span class="campo-etiqueta">Nombre del producto *</span>
         <input id="alta-nombre" type="text" required placeholder="Ej: Arroz blanco 1 kg">
       </label>
-      <label class="campo">
-        <span class="campo-etiqueta">Categoria</span>
-        <input id="alta-categoria" type="text" list="lista-categorias" placeholder="Alimentos">
-        <datalist id="lista-categorias"></datalist>
-      </label>
       <div class="formulario-acciones">
-        <button type="submit" class="btn btn-primario">Guardar nombre</button>
+        <button type="submit" class="btn btn-primario">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          Guardar nombre
+        </button>
         <button type="button" id="btn-cancelar-alta" class="btn btn-plano">Cancelar</button>
       </div>
     </form>
@@ -209,15 +248,14 @@
 
 </section>
 
-<!-- ───────────── Vista: SKU ─────────────
-     Dato propio de la empresa: el SKU que asigna compras y *todos* los codigos
-     de barras con que ese producto llega. La caja y la unidad traen codigos
-     distintos; el nombre del proveedor no sirve para cruzar nada. -->
+<!-- ───────────── Vista: SKU ───────────── -->
 <section id="vista-skus" class="vista" role="tabpanel" aria-label="SKU">
 
   <div class="titulo-vista">
-    <h2>Tabla de SKU</h2>
-    <p>El codigo interno de compras y todos los codigos de barras con que llega</p>
+    <div>
+      <h2>Tabla de SKU</h2>
+      <p>Código interno de compras, precios de góndola y todos los códigos de barras asociados</p>
+    </div>
   </div>
 
   <div class="metricas" id="metricas-sku"></div>
@@ -229,17 +267,40 @@
           <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V5a2 2 0 0 1 2-2h6.9a2 2 0 0 1 1.4.6l7.5 7.5a2 2 0 0 1 0 2.8z"/>
           <circle cx="7.5" cy="7.5" r="1.3"/>
         </svg>
-        SKU y sus codigos
+        SKU y sus códigos
       </h2>
       <div class="acciones-cabecera">
-        <button id="btn-sku-nuevo" class="btn btn-primario btn-pequeno">Nuevo SKU</button>
-        <button id="btn-sku-exportar-csv" class="btn btn-secundario btn-pequeno">CSV</button>
-        <button id="btn-sku-exportar-json" class="btn btn-secundario btn-pequeno">JSON</button>
-        <label class="btn btn-secundario btn-pequeno">
+        <button id="btn-sku-nuevo" class="btn btn-primario btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Nuevo SKU
+        </button>
+        <label class="btn btn-secundario btn-pequeno" title="Importar desde archivo JSON o CSV">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
           Importar
           <input id="entrada-importar-sku" type="file" accept=".json,.csv,.txt" hidden>
         </label>
-        <button id="btn-sku-vaciar" class="btn btn-plano btn-pequeno">Vaciar</button>
+        <button id="btn-sku-exportar-csv" class="btn btn-secundario btn-pequeno" type="button" title="Exportar tabla a CSV">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          CSV
+        </button>
+        <button id="btn-sku-exportar-json" class="btn btn-secundario btn-pequeno" type="button" title="Exportar respaldo en JSON">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          JSON
+        </button>
+        <button id="btn-sku-vaciar" class="btn btn-peligro-suave btn-pequeno" type="button" title="Vaciar toda la tabla de SKU">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          </svg>
+          Vaciar
+        </button>
       </div>
     </div>
 
@@ -247,37 +308,46 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>
       </svg>
-      <span>La caja y la unidad traen <strong>codigos distintos</strong>. La
+      <span>La caja y la unidad traen <strong>códigos distintos</strong>. La
       cantidad de un empaque solo la sabe quien lo abre.</span>
     </p>
 
-    <label class="campo campo-buscar">
-      <span class="campo-etiqueta">Buscar</span>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
-      </svg>
-      <input id="busqueda-skus" type="search" placeholder="SKU-00001, harina, 7702..., Colombina" autocomplete="off">
-    </label>
+    <div class="barra-herramientas">
+      <label class="campo campo-buscar">
+        <span class="solo-lectores">Buscar SKU</span>
+        <svg class="icono-buscar" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+        </svg>
+        <input id="busqueda-skus" type="search" placeholder="Buscar por SKU, nombre, código de barras o proveedor…" autocomplete="off">
+      </label>
+      <div class="filtros-rapidos" id="filtros-skus" role="group" aria-label="Filtrar tabla de SKU">
+        <button type="button" class="filtro-chip activo" data-filtro-sku="todos">Todos</button>
+        <button type="button" class="filtro-chip" data-filtro-sku="sin-cantidad">Sin cantidad / U/E</button>
+        <button type="button" class="filtro-chip" data-filtro-sku="precio-pendiente">Precio por confirmar</button>
+        <button type="button" class="filtro-chip" data-filtro-sku="sin-codigo">Sin código</button>
+        <button type="button" class="filtro-chip" data-filtro-sku="con-caja">Con caja / paca</button>
+      </div>
+    </div>
 
     <div class="tabla-envoltorio">
       <table class="tabla">
         <colgroup>
-          <col style="width:9rem">
+          <col style="width:8.5rem">
           <col>
-          <col style="width:19rem">
+          <col style="width:21.5rem">
           <col style="width:5.5rem">
-          <col style="width:9rem">
+          <col style="width:8.5rem">
           <col style="width:8rem">
-          <col style="width:6rem">
-          <col style="width:15rem">
+          <col style="width:5rem">
+          <col style="width:15.5rem">
         </colgroup>
         <thead>
           <tr>
             <th>SKU</th>
             <th>Nombre interno</th>
-            <th>Codigos de barras</th>
-            <th class="num" title="Unidad de empaque: como viene del proveedor">U/E</th>
-            <th class="col-baja">Categoria</th>
+            <th>Códigos de barras</th>
+            <th class="num" title="Unidad de empaque: cómo viene del proveedor">U/E</th>
+            <th class="col-baja">Categoría</th>
             <th class="num">Precio</th>
             <th class="num col-media">Cajas</th>
             <th class="num">Acciones</th>
@@ -287,10 +357,11 @@
       </table>
     </div>
     <div id="sin-skus" class="vacio oculto">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
       </svg>
-      <p>Ningun SKU coincide con la busqueda.</p>
+      <p>Ningún SKU coincide con el filtro o la búsqueda.</p>
+      <button type="button" id="btn-limpiar-filtros-sku" class="btn btn-secundario btn-pequeno oculto">Mostrar todos</button>
     </div>
     <div class="paginacion" id="pag-skus"></div>
   </div>
@@ -301,8 +372,10 @@
 <section id="vista-listado" class="vista" role="tabpanel" aria-label="Listado">
 
   <div class="titulo-vista">
-    <h2>Listado de precios del DMS</h2>
-    <p>Carga precios y empaques, y deja en cola lo que falta escanear</p>
+    <div>
+      <h2>Listado de precios del DMS</h2>
+      <p>Carga precios y empaques, y deja en cola lo que falta escanear</p>
+    </div>
   </div>
 
   <div class="tarjeta">
@@ -321,39 +394,52 @@
         <path d="M12 3v12M8 11l4 4 4-4M4 20h16"/>
       </svg>
       <span>Mejor el <strong>Excel (.xlsx)</strong> o el CSV del DMS. El texto
-      del PDF pierde columnas y esas filas quedan en revision.</span>
+      del PDF pierde columnas y esas filas quedan en revisión.</span>
     </p>
 
-    <div class="campo-grupo">
-      <label class="btn btn-primario">
-        Elegir archivo
+    <div class="carga-listado-grid">
+      <label class="zona-archivo" id="zona-listado">
         <input id="entrada-listado" type="file" accept=".xlsx,.xls,.csv,.txt,.tsv" hidden>
+        <span class="zona-archivo-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+        </span>
+        <span class="zona-archivo-texto">
+          <strong>Elegir archivo del listado</strong>
+          <span class="ayuda">Arrastra o haz clic aquí (.xlsx, .csv o .txt)</span>
+        </span>
       </label>
-      <button id="btn-listado-pegar" class="btn btn-secundario">Pegar el texto</button>
+      <button id="btn-listado-pegar" class="btn btn-secundario" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Pegar el texto
+      </button>
     </div>
 
     <label class="campo oculto" id="campo-listado-texto">
-      <span class="campo-etiqueta">Pega aqui el listado tal como sale del reporte</span>
+      <span class="campo-etiqueta">Pega aquí el listado tal como sale del reporte</span>
       <textarea id="listado-texto" rows="8" spellcheck="false"
                 placeholder="Codigo     Alterna      Descripcion ..."></textarea>
-      <button id="btn-listado-leer" class="btn btn-secundario btn-pequeno">Leer lo pegado</button>
+      <button id="btn-listado-leer" class="btn btn-primario btn-pequeno" type="button">Leer lo pegado</button>
     </label>
 
-    <details class="detalle">
+    <details class="detalle detalle-compacto">
       <summary>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
         </svg>
-        Que columnas se leen y que se comprueba
+        Qué columnas se leen y qué se comprueba
       </summary>
       <div class="detalle-cuerpo">
         <p>
-          Se esperan <strong>Codigo</strong> (el SKU de compras),
-          <strong>Alterna</strong> (el codigo de barras),
-          <strong>Descripcion</strong>, <strong>u/e</strong>,
+          Se esperan <strong>Código</strong> (el SKU de compras),
+          <strong>Alterna</strong> (el código de barras),
+          <strong>Descripción</strong>, <strong>u/e</strong>,
           <strong>Cajas</strong>, <strong>Precio Und</strong>,
           <strong>IVA</strong> y <strong>Precio Final</strong>. El proveedor se
-          lee del encabezado de cada seccion del reporte.
+          lee del encabezado de cada sección del reporte.
         </p>
         <p>
           Formatos aceptados: Excel (.xlsx), CSV y el texto del reporte con las
@@ -361,8 +447,8 @@
         </p>
         <p>
           De cada fila se comprueba que
-          <code>Precio Und x (1 - Desc) x (1 + IVA)</code> de el precio final.
-          Donde no da, la fila viene corrida de renglon y su codigo de barras
+          <code>Precio Und × (1 − Desc) × (1 + IVA)</code> dé el precio final.
+          Donde no da, la fila viene corrida de renglón y su código de barras
           puede no ser el de ese producto. Los cigarrillos y algunas bebidas no
           cuadran por el impuesto al consumo, que no sale en ninguna columna.
         </p>
@@ -382,8 +468,18 @@
         Pendientes de compras
       </h2>
       <div class="acciones-cabecera">
-        <button id="btn-revision-csv" class="btn btn-secundario btn-pequeno">Exportar CSV</button>
-        <button id="btn-revision-vaciar" class="btn btn-plano btn-pequeno">Vaciar cola</button>
+        <button id="btn-revision-csv" class="btn btn-secundario btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Exportar CSV
+        </button>
+        <button id="btn-revision-vaciar" class="btn btn-peligro-suave btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          </svg>
+          Vaciar cola
+        </button>
       </div>
     </div>
 
@@ -393,33 +489,42 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8"/>
       </svg>
-      <span>Filas sin un codigo de barras usable. Cada una se resuelve
+      <span>Filas sin un código de barras usable. Cada una se resuelve
       <strong>escaneando el empaque</strong>.</span>
     </p>
 
-    <details class="detalle">
-      <summary>Por que no entran solas a la tabla</summary>
+    <details class="detalle detalle-compacto">
+      <summary>Por qué no entran solas a la tabla</summary>
       <div class="detalle-cuerpo">
         <p>
           Son filas del listado que no se pueden guardar como producto
-          escaneable: sin codigo de barras, con un numero que no es un codigo
+          escaneable: sin código de barras, con un número que no es un código
           de barras, o que el texto del PDF trajo incompletas.
         </p>
         <p>
-          Un codigo inventado no se nota nunca: nadie lo escanea y el producto
+          Un código inventado no se nota nunca: nadie lo escanea y el producto
           figura como registrado. Por eso queda pendiente hasta que alguien lea
           el empaque de verdad.
         </p>
       </div>
     </details>
 
-    <label class="campo campo-buscar">
-      <span class="campo-etiqueta">Buscar</span>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
-      </svg>
-      <input id="busqueda-revision" type="search" placeholder="10223103, ROTHMANS, QUALA" autocomplete="off">
-    </label>
+    <div class="barra-herramientas">
+      <label class="campo campo-buscar">
+        <span class="solo-lectores">Buscar pendientes</span>
+        <svg class="icono-buscar" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+        </svg>
+        <input id="busqueda-revision" type="search" placeholder="Buscar por SKU, descripción, proveedor o código…" autocomplete="off">
+      </label>
+      <div class="filtros-rapidos" id="filtros-revision" role="group" aria-label="Filtrar pendientes">
+        <button type="button" class="filtro-chip activo" data-filtro-revision="todos">Todos</button>
+        <button type="button" class="filtro-chip" data-filtro-revision="sin-codigo">Sin código</button>
+        <button type="button" class="filtro-chip" data-filtro-revision="codigo-invalido">Código inválido</button>
+        <button type="button" class="filtro-chip" data-filtro-revision="con-sugerencia">Con sugerencia</button>
+        <button type="button" class="filtro-chip" data-filtro-revision="fila-incompleta">Incompletas</button>
+      </div>
+    </div>
 
     <div class="tabla-envoltorio">
       <table class="tabla">
@@ -428,12 +533,12 @@
           <col>
           <col style="width:22rem">
           <col style="width:8rem">
-          <col style="width:13rem">
+          <col style="width:14rem">
         </colgroup>
         <thead>
           <tr>
             <th>SKU</th>
-            <th>Descripcion</th>
+            <th>Descripción</th>
             <th>Problema</th>
             <th class="num col-media">Precio</th>
             <th class="num">Acciones</th>
@@ -443,10 +548,11 @@
       </table>
     </div>
     <div id="sin-revision" class="vacio oculto">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>
       </svg>
-      <p>No hay nada pendiente.</p>
+      <p>No hay pendientes que coincidan.</p>
+      <button type="button" id="btn-limpiar-filtros-revision" class="btn btn-secundario btn-pequeno oculto">Mostrar todos</button>
     </div>
     <div class="paginacion" id="pag-revision"></div>
   </div>
@@ -457,8 +563,10 @@
 <section id="vista-productos" class="vista" role="tabpanel" aria-label="Productos">
 
   <div class="titulo-vista">
-    <h2>Productos identificados</h2>
-    <p>Cache de los nombres que ya devolvieron las fuentes en linea</p>
+    <div>
+      <h2>Productos identificados</h2>
+      <p>Caché local de los nombres devueltos por las fuentes en línea o nombrados a mano</p>
+    </div>
   </div>
 
   <div class="metricas" id="metricas"></div>
@@ -469,27 +577,58 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>
         </svg>
-        Nombres en cache
+        Nombres en caché
       </h2>
       <div class="acciones-cabecera">
-        <button id="btn-nuevo" class="btn btn-secundario btn-pequeno">Agregar a mano</button>
-        <button id="btn-exportar-json" class="btn btn-secundario btn-pequeno">JSON</button>
-        <button id="btn-exportar-csv" class="btn btn-secundario btn-pequeno">CSV</button>
+        <button id="btn-nuevo" class="btn btn-primario btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Agregar a mano
+        </button>
         <label class="btn btn-secundario btn-pequeno">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
           Importar
           <input id="entrada-importar" type="file" accept=".json,.csv,.txt" hidden>
         </label>
-        <button id="btn-vaciar" class="btn btn-plano btn-pequeno">Vaciar cache</button>
+        <button id="btn-exportar-json" class="btn btn-secundario btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          JSON
+        </button>
+        <button id="btn-exportar-csv" class="btn btn-secundario btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          CSV
+        </button>
+        <button id="btn-vaciar" class="btn btn-peligro-suave btn-pequeno" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          </svg>
+          Vaciar caché
+        </button>
       </div>
     </div>
 
-    <label class="campo campo-buscar">
-      <span class="campo-etiqueta">Buscar</span>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
-      </svg>
-      <input id="busqueda-productos" type="search" placeholder="arroz, 770..., Bebidas" autocomplete="off">
-    </label>
+    <div class="barra-herramientas">
+      <label class="campo campo-buscar">
+        <span class="solo-lectores">Buscar productos</span>
+        <svg class="icono-buscar" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+        </svg>
+        <input id="busqueda-productos" type="search" placeholder="Buscar por nombre, código o categoría…" autocomplete="off">
+      </label>
+      <div class="filtros-rapidos" id="filtros-productos" role="group" aria-label="Filtrar productos en caché">
+        <button type="button" class="filtro-chip activo" data-filtro-producto="todos">Todos</button>
+        <button type="button" class="filtro-chip" data-filtro-producto="oficial">GS1 oficial</button>
+        <button type="button" class="filtro-chip" data-filtro-producto="en-linea">Fuentes abiertas</button>
+        <button type="button" class="filtro-chip" data-filtro-producto="manual">Manual / Editado</button>
+      </div>
+    </div>
 
     <div class="tabla-envoltorio">
       <table class="tabla">
@@ -497,14 +636,14 @@
           <col style="width:11rem">
           <col>
           <col style="width:11rem">
-          <col style="width:9rem">
-          <col style="width:12rem">
+          <col style="width:9.5rem">
+          <col style="width:14.5rem">
         </colgroup>
         <thead>
           <tr>
-            <th>Codigo</th>
+            <th>Código</th>
             <th>Nombre</th>
-            <th class="col-media">Categoria</th>
+            <th class="col-media">Categoría</th>
             <th class="col-baja">Fuente</th>
             <th class="num">Acciones</th>
           </tr>
@@ -513,10 +652,11 @@
       </table>
     </div>
     <div id="sin-productos" class="vacio oculto">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
       </svg>
-      <p>Ningun producto coincide con la busqueda.</p>
+      <p>Ningún producto coincide con la búsqueda.</p>
+      <button type="button" id="btn-limpiar-filtros-productos" class="btn btn-secundario btn-pequeno oculto">Mostrar todos</button>
     </div>
     <div class="paginacion" id="pag-productos"></div>
   </div>
@@ -527,8 +667,10 @@
 <section id="vista-historial" class="vista" role="tabpanel" aria-label="Historial">
 
   <div class="titulo-vista">
-    <h2>Historial de lecturas</h2>
-    <p>Las ultimas 300 lecturas de este equipo</p>
+    <div>
+      <h2>Historial de lecturas</h2>
+      <p>Las últimas 300 lecturas registradas en este equipo</p>
+    </div>
   </div>
 
   <div class="tarjeta">
@@ -539,32 +681,56 @@
         </svg>
         Lecturas
       </h2>
-      <button id="btn-limpiar-historial" class="btn btn-plano btn-pequeno">Limpiar</button>
+      <button id="btn-limpiar-historial" class="btn btn-peligro-suave btn-pequeno" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        </svg>
+        Limpiar
+      </button>
     </div>
+
+    <div class="barra-herramientas">
+      <label class="campo campo-buscar">
+        <span class="solo-lectores">Buscar en historial</span>
+        <svg class="icono-buscar" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+        </svg>
+        <input id="busqueda-historial" type="search" placeholder="Filtrar por código, producto o vía de lectura…" autocomplete="off">
+      </label>
+      <div class="filtros-rapidos" id="filtros-historial" role="group" aria-label="Filtrar historial">
+        <button type="button" class="filtro-chip activo" data-filtro-historial="todos">Todos</button>
+        <button type="button" class="filtro-chip" data-filtro-historial="encontrados">Encontrados</button>
+        <button type="button" class="filtro-chip" data-filtro-historial="no-registrados">Sin resultado</button>
+        <button type="button" class="filtro-chip" data-filtro-historial="invalidos">Inválidos</button>
+      </div>
+    </div>
+
     <div class="tabla-envoltorio">
       <table class="tabla">
         <colgroup>
           <col style="width:12rem">
           <col style="width:12rem">
           <col>
-          <col style="width:11rem">
+          <col style="width:12rem">
+          <col style="width:7.5rem">
         </colgroup>
         <thead>
           <tr>
             <th>Fecha y hora</th>
-            <th>Codigo</th>
+            <th>Código</th>
             <th>Producto</th>
             <th class="col-media">Fuente</th>
+            <th class="num">Acción</th>
           </tr>
         </thead>
         <tbody id="cuerpo-historial"></tbody>
       </table>
     </div>
     <div id="sin-historial" class="vacio oculto">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
       </svg>
-      <p>Todavia no hay lecturas registradas.</p>
+      <p>Todavía no hay lecturas que mostrar.</p>
     </div>
     <div class="paginacion" id="pag-historial"></div>
   </div>
@@ -573,88 +739,118 @@
 
 </main>
 
-<!-- Dialogo de edicion -->
-<dialog id="dialogo-editar">
+<!-- Diálogo de edición de producto en caché -->
+<dialog id="dialogo-editar" aria-labelledby="titulo-editar">
   <form id="form-editar" class="formulario">
-    <h2 id="titulo-editar">Editar producto</h2>
+    <div class="dialogo-cabecera">
+      <h2 id="titulo-editar">Editar producto</h2>
+      <button type="button" class="btn-cerrar-modal" data-cerrar-dialogo="dialogo-editar" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
     <label class="campo">
-      <span class="campo-etiqueta">Codigo *</span>
-      <input id="editar-codigo" type="text" required>
+      <span class="campo-etiqueta">Código *</span>
+      <input id="editar-codigo" type="text" class="mono" required>
       <span id="editar-codigo-aviso" class="ayuda"></span>
     </label>
     <label class="campo">
       <span class="campo-etiqueta">Nombre *</span>
       <input id="editar-nombre" type="text" required>
     </label>
-    <label class="campo">
-      <span class="campo-etiqueta">Categoria</span>
-      <input id="editar-categoria" type="text" list="lista-categorias">
-    </label>
-    <label class="campo">
-      <span class="campo-etiqueta">Marca</span>
-      <input id="editar-marca" type="text">
-    </label>
-    <div class="formulario-acciones">
-      <button type="submit" class="btn btn-primario">Guardar</button>
+    <div class="campo-fila">
+      <label class="campo">
+        <span class="campo-etiqueta">Categoría</span>
+        <input id="editar-categoria" type="text" list="lista-categorias">
+      </label>
+      <label class="campo">
+        <span class="campo-etiqueta">Marca</span>
+        <input id="editar-marca" type="text">
+      </label>
+    </div>
+    <div class="formulario-acciones dialogo-pie">
       <button type="button" id="btn-cerrar-dialogo" class="btn btn-plano">Cancelar</button>
+      <button type="submit" class="btn btn-primario">Guardar cambios</button>
     </div>
   </form>
 </dialog>
 
-<!-- Dialogo para resolver un pendiente del listado -->
-<dialog id="dialogo-revision">
+<!-- Diálogo para resolver un pendiente del listado -->
+<dialog id="dialogo-revision" aria-labelledby="titulo-revision">
   <form id="form-revision" class="formulario">
-    <h2>Escanear el producto</h2>
-    <p class="ayuda" id="revision-detalle"></p>
+    <div class="dialogo-cabecera">
+      <h2 id="titulo-revision">Escanear el producto</h2>
+      <button type="button" class="btn-cerrar-modal" data-cerrar-dialogo="dialogo-revision" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="nota" id="revision-detalle"></div>
 
     <label class="campo">
-      <span class="campo-etiqueta">Codigo de barras del empaque *</span>
-      <input id="revision-codigo" type="text" required inputmode="numeric"
-             autocomplete="off" placeholder="Dispara el lector o escribelo">
+      <span class="campo-etiqueta">Código de barras del empaque *</span>
+      <input id="revision-codigo" type="text" class="mono" required inputmode="numeric"
+             autocomplete="off" placeholder="Dispara el lector o escríbelo">
       <span id="revision-aviso" class="ayuda"></span>
     </label>
 
-    <div class="formulario-acciones">
-      <button type="submit" class="btn btn-primario">Vincular a este SKU</button>
+    <div class="formulario-acciones dialogo-pie">
       <button type="button" id="btn-cerrar-revision" class="btn btn-plano">Cancelar</button>
+      <button type="submit" class="btn btn-primario">Vincular a este SKU</button>
     </div>
   </form>
 </dialog>
 
-<!-- Dialogo de SKU: el dato que asigna compras -->
-<dialog id="dialogo-sku">
+<!-- Diálogo de SKU -->
+<dialog id="dialogo-sku" aria-labelledby="titulo-sku">
   <form id="form-sku" class="formulario">
-    <h2 id="titulo-sku">Nuevo SKU</h2>
+    <div class="dialogo-cabecera">
+      <h2 id="titulo-sku">Nuevo SKU</h2>
+      <button type="button" class="btn-cerrar-modal" data-cerrar-dialogo="dialogo-sku" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
     <label class="campo">
       <span class="campo-etiqueta">SKU *</span>
-      <input id="sku-codigo-interno" type="text" required placeholder="SKU-00001" autocomplete="off">
-      <span class="ayuda">El codigo interno que asigna compras.</span>
+      <input id="sku-codigo-interno" type="text" class="mono" required placeholder="SKU-00001" autocomplete="off">
+      <span class="ayuda">El código interno que asigna compras.</span>
     </label>
     <label class="campo">
       <span class="campo-etiqueta">Nombre interno *</span>
-      <input id="sku-nombre" type="text" required placeholder="Harina de maiz blanco PAN 1 kg">
+      <input id="sku-nombre" type="text" required placeholder="Harina de maíz blanco PAN 1 kg">
       <span class="ayuda">El nombre de la empresa, no el del proveedor.</span>
     </label>
     <label class="campo">
-      <span class="campo-etiqueta">Categoria</span>
+      <span class="campo-etiqueta">Categoría</span>
       <input id="sku-categoria" type="text" list="lista-categorias-sku" placeholder="Alimentos">
       <datalist id="lista-categorias-sku"></datalist>
     </label>
-    <div class="formulario-acciones">
-      <button type="submit" class="btn btn-primario">Guardar</button>
+    <div class="formulario-acciones dialogo-pie">
       <button type="button" id="btn-cerrar-sku" class="btn btn-plano">Cancelar</button>
+      <button type="submit" class="btn btn-primario">Guardar SKU</button>
     </div>
   </form>
 </dialog>
 
-<!-- Dialogo de vinculacion: un codigo nuevo que pertenece a un SKU -->
-<dialog id="dialogo-vincular">
+<!-- Diálogo de vinculación -->
+<dialog id="dialogo-vincular" aria-labelledby="titulo-vincular">
   <form id="form-vincular" class="formulario">
-    <h2>Vincular codigo a un SKU</h2>
+    <div class="dialogo-cabecera">
+      <h2 id="titulo-vincular">Vincular código a un SKU</h2>
+      <button type="button" class="btn-cerrar-modal" data-cerrar-dialogo="dialogo-vincular" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
 
     <label class="campo">
-      <span class="campo-etiqueta">Codigo leido</span>
-      <input id="vinc-codigo" type="text" readonly>
+      <span class="campo-etiqueta">Código leído</span>
+      <input id="vinc-codigo" type="text" class="mono" readonly>
       <span id="vinc-info" class="ayuda"></span>
     </label>
 
@@ -666,7 +862,7 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
         </svg>
-        <input id="vinc-sku-buscar" type="search" placeholder="Filtra: SKU, nombre..." autocomplete="off" aria-label="Filtrar SKU">
+        <input id="vinc-sku-buscar" type="search" placeholder="Filtrar lista: SKU o nombre…" autocomplete="off" aria-label="Filtrar SKU">
       </span>
       <select id="vinc-sku" required></select>
     </label>
@@ -674,7 +870,7 @@
     <div id="vinc-nuevo" class="campo-anidado" hidden>
       <label class="campo">
         <span class="campo-etiqueta">SKU nuevo *</span>
-        <input id="vinc-nuevo-sku" type="text" autocomplete="off">
+        <input id="vinc-nuevo-sku" type="text" class="mono" autocomplete="off">
       </label>
       <label class="campo">
         <span class="campo-etiqueta">Nombre interno *</span>
@@ -696,7 +892,7 @@
       <label class="campo">
         <span class="campo-etiqueta">Unidades que contiene *</span>
         <input id="vinc-cantidad" type="number" min="1" step="1" value="1">
-        <span class="ayuda">Cuentalas al abrir el empaque.</span>
+        <span class="ayuda">Cuéntalas al abrir el empaque.</span>
       </label>
     </div>
 
@@ -708,7 +904,7 @@
       </label>
       <label class="campo">
         <span class="campo-etiqueta">Nombre que le da el proveedor</span>
-        <input id="vinc-nombre-proveedor" type="text" placeholder="Como viene en la factura o la caja">
+        <input id="vinc-nombre-proveedor" type="text" placeholder="Como viene en factura o caja">
       </label>
     </div>
     <p class="nota">
@@ -716,14 +912,58 @@
         <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/>
       </svg>
       <span>El nombre del proveedor es solo referencia para reconocer la
-      factura. <strong>El codigo es la llave.</strong></span>
+      factura. <strong>El código es la llave.</strong></span>
     </p>
 
-    <div class="formulario-acciones">
-      <button type="submit" class="btn btn-primario">Vincular</button>
+    <div class="formulario-acciones dialogo-pie">
       <button type="button" id="btn-cerrar-vincular" class="btn btn-plano">Cancelar</button>
+      <button type="submit" class="btn btn-primario">Vincular código</button>
     </div>
   </form>
+</dialog>
+
+<!-- Diálogo de confirmación accesible (reemplaza window.confirm) -->
+<dialog id="dialogo-confirmar" class="dialogo-compacto" aria-labelledby="confirmar-titulo">
+  <div class="dialogo-cabecera">
+    <h2 id="confirmar-titulo">Confirmar acción</h2>
+    <button type="button" class="btn-cerrar-modal" id="confirmar-cerrar-x" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <p id="confirmar-mensaje" class="dialogo-mensaje"></p>
+  <p id="confirmar-detalle" class="ayuda dialogo-detalle"></p>
+  <div class="formulario-acciones dialogo-pie">
+    <button type="button" id="confirmar-cancelar" class="btn btn-plano">Cancelar</button>
+    <button type="button" id="confirmar-aceptar" class="btn btn-peligro">Confirmar</button>
+  </div>
+</dialog>
+
+<!-- Diálogo de modo de importación (evita reemplazar por error) -->
+<dialog id="dialogo-importar" class="dialogo-compacto" aria-labelledby="importar-titulo">
+  <div class="dialogo-cabecera">
+    <h2 id="importar-titulo">¿Cómo importar el archivo?</h2>
+    <button type="button" class="btn-cerrar-modal" id="importar-cerrar-x" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <p id="importar-mensaje" class="dialogo-mensaje"></p>
+  <div class="opciones-importar">
+    <button type="button" id="importar-fusionar" class="opcion-card">
+      <strong>Agregar y actualizar</strong>
+      <span>Conserva los registros actuales y solo agrega nuevos o actualiza los coincidentes.</span>
+    </button>
+    <button type="button" id="importar-reemplazar" class="opcion-card opcion-card-peligro">
+      <strong>Reemplazar todo</strong>
+      <span>Borra la tabla actual y la carga desde cero con el contenido de este archivo.</span>
+    </button>
+  </div>
+  <div class="formulario-acciones dialogo-pie">
+    <button type="button" id="importar-cancelar" class="btn btn-plano">Cancelar</button>
+  </div>
 </dialog>
 
 <div id="avisos" class="avisos" role="status" aria-live="polite"></div>

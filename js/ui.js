@@ -1,15 +1,11 @@
 /**
- * ui.js — Dos piezas de interfaz que no saben nada del dominio: el tema
- * claro/oscuro y la paginacion de las tablas.
+ * ui.js — Piezas reutilizables de interfaz sin acoplamiento al dominio:
+ * tema claro/oscuro, paginación de tablas, diálogos de confirmación /
+ * importación y copiado al portapapeles.
  *
- * Las dos guardan su estado en localStorage bajo una sola clave, igual que el
- * resto de la app (slb.*). Si el almacenamiento esta bloqueado la interfaz
- * sigue funcionando: solo deja de recordar la eleccion.
- *
- * Paginacion: las tablas se pintan con innerHTML en cada refresco, asi que el
- * paginador no guarda filas. Recibe la lista completa, devuelve el trozo que
- * toca pintar y dibuja sus controles. El modulo que lo usa vuelve a llamar a
- * su propia funcion de refresco cuando el paginador cambia de pagina.
+ * Las preferencias guardan su estado en localStorage bajo una sola clave, igual
+ * que el resto de la app (slb.*). Si el almacenamiento está bloqueado la
+ * interfaz sigue funcionando: solo deja de recordar la elección.
  */
 (function (global) {
   'use strict';
@@ -33,7 +29,7 @@
   function guardar() {
     try {
       global.localStorage.setItem(CLAVE, JSON.stringify(preferencias));
-    } catch (e) { /* no se puede recordar; la sesion actual funciona igual */ }
+    } catch (e) { /* no se puede recordar; la sesión actual funciona igual */ }
   }
 
   leer();
@@ -45,7 +41,7 @@
       ? 'oscuro' : 'claro';
   }
 
-  /** El tema que se esta viendo: el elegido, o el del sistema si no hay ninguno. */
+  /** El tema que se está viendo: el elegido, o el del sistema si no hay ninguno. */
   function temaActual() {
     return preferencias.tema || temaDelSistema();
   }
@@ -75,8 +71,6 @@
     var boton = document.getElementById('btn-tema');
     if (boton) boton.addEventListener('click', alternarTema);
 
-    // Mientras el usuario no haya elegido, el sistema sigue mandando: si el
-    // telefono pasa a modo oscuro de noche, la app lo sigue.
     if (global.matchMedia) {
       var consulta = global.matchMedia('(prefers-color-scheme: dark)');
       var alCambiar = function () { if (!preferencias.tema) aplicarTema(temaDelSistema()); };
@@ -85,7 +79,7 @@
     }
   }
 
-  // ───────────────── Paginacion ─────────────────
+  // ───────────────── Paginación ─────────────────
 
   var ICONO_ANTERIOR =
     '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
@@ -96,11 +90,6 @@
     'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M9 18l6-6-6-6"/></svg>';
 
-  /**
-   * Las paginas que se muestran como boton: siempre la primera, la ultima y
-   * las vecinas de la actual. El resto se resume con puntos suspensivos, para
-   * que una tabla de 400 paginas no dibuje 400 botones.
-   */
   function paginasVisibles(actual, total) {
     var cerca = {};
     cerca[1] = true;
@@ -118,14 +107,6 @@
     return salida;
   }
 
-  /**
-   * Crea un paginador para una tabla.
-   *
-   * @param idContenedor  div vacio donde van los controles.
-   * @param alCambiar     se llama cuando cambia la pagina o el tamano; el
-   *                      modulo vuelve a pintar su tabla desde cero.
-   * @param opciones      { tamano: filas por pagina por defecto }
-   */
   function paginador(idContenedor, alCambiar, opciones) {
     var contenedor = document.getElementById(idContenedor);
     var guardadoTamano = Number(preferencias.tamanos[idContenedor]);
@@ -170,10 +151,6 @@
       });
     }
 
-    /**
-     * Devuelve solo las filas de la pagina actual. Si la lista se encogio
-     * (una busqueda, un borrado), la pagina se ajusta en vez de quedar vacia.
-     */
     function recortar(lista) {
       total = lista.length;
       var limite = paginas();
@@ -183,7 +160,6 @@
       return lista.slice(desde, desde + tamano);
     }
 
-    /** Dibuja los controles. Se llama despues de recortar(). */
     function pintar() {
       if (!contenedor) return;
 
@@ -196,32 +172,32 @@
       var numeros = '';
       if (limite > 1) {
         numeros = paginasVisibles(pagina, limite).map(function (p) {
-          if (p === 'salto') return '<span class="pag-salto" aria-hidden="true">...</span>';
+          if (p === 'salto') return '<span class="pag-salto" aria-hidden="true">…</span>';
           return '<button type="button" class="pag-btn' + (p === pagina ? ' activa' : '') +
             '" data-pag-ir="' + p + '"' +
             (p === pagina ? ' aria-current="page"' : '') +
-            ' aria-label="Pagina ' + p + '">' + p + '</button>';
+            ' aria-label="Página ' + p + '">' + p + '</button>';
         }).join('');
       }
 
       contenedor.innerHTML =
         '<span class="paginacion-info">' +
           (tamano
-            ? '<strong>' + desde + '-' + hasta + '</strong> de ' + total + ' registros'
+            ? '<strong>' + desde + '–' + hasta + '</strong> de ' + total + ' registros'
             : '<strong>' + total + '</strong> registros') +
         '</span>' +
         (limite > 1
           ? '<div class="paginacion-botones">' +
-              '<button type="button" class="pag-btn" data-pag="anterior" aria-label="Pagina anterior"' +
+              '<button type="button" class="pag-btn" data-pag="anterior" aria-label="Página anterior"' +
                 (pagina <= 1 ? ' disabled' : '') + '>' + ICONO_ANTERIOR + '</button>' +
               numeros +
               '<span class="paginacion-paso">' + pagina + ' de ' + limite + '</span>' +
-              '<button type="button" class="pag-btn" data-pag="siguiente" aria-label="Pagina siguiente"' +
+              '<button type="button" class="pag-btn" data-pag="siguiente" aria-label="Página siguiente"' +
                 (pagina >= limite ? ' disabled' : '') + '>' + ICONO_SIGUIENTE + '</button>' +
             '</div>'
           : '') +
-        '<label class="paginacion-tamano"><span>Filas por pagina</span>' +
-          '<select data-pag-tamano aria-label="Filas por pagina">' +
+        '<label class="paginacion-tamano"><span>Filas por página</span>' +
+          '<select data-pag-tamano aria-label="Filas por página">' +
             TAMANOS.map(function (t) {
               return '<option value="' + t + '"' + (t === tamano ? ' selected' : '') + '>' +
                      (t ? t : 'Todas') + '</option>';
@@ -230,7 +206,6 @@
         '</label>';
     }
 
-    /** Vuelve a la primera pagina. Se usa al cambiar la busqueda. */
     function reiniciar() { pagina = 1; }
 
     return {
@@ -242,11 +217,145 @@
     };
   }
 
+  // ───────────────── Diálogos accesibles ─────────────────
+
+  /**
+   * Diálogo de confirmación no bloqueante. Devuelve Promise<boolean>.
+   * opciones: { titulo, mensaje, detalle, textoConfirmar, textoCancelar, variante }
+   */
+  function confirmar(opciones) {
+    var o = opciones || {};
+    var dlg = document.getElementById('dialogo-confirmar');
+    if (!dlg || typeof dlg.showModal !== 'function') {
+      var texto = (o.mensaje || '¿Confirmar?') + (o.detalle ? '\n\n' + o.detalle : '');
+      return Promise.resolve(global.confirm(texto));
+    }
+
+    var elTitulo = document.getElementById('confirmar-titulo');
+    var elMensaje = document.getElementById('confirmar-mensaje');
+    var elDetalle = document.getElementById('confirmar-detalle');
+    var btnAceptar = document.getElementById('confirmar-aceptar');
+    var btnCancelar = document.getElementById('confirmar-cancelar');
+    var btnCerrarX = document.getElementById('confirmar-cerrar-x');
+
+    elTitulo.textContent = o.titulo || 'Confirmar acción';
+    elMensaje.textContent = o.mensaje || '';
+    elDetalle.textContent = o.detalle || '';
+    elDetalle.classList.toggle('oculto', !o.detalle);
+    btnAceptar.textContent = o.textoConfirmar || 'Confirmar';
+    btnCancelar.textContent = o.textoCancelar || 'Cancelar';
+    btnAceptar.className = 'btn ' + (o.variante === 'primario' ? 'btn-primario' : 'btn-peligro');
+
+    return new Promise(function (resolve) {
+      var terminado = false;
+      function cerrar(resultado) {
+        if (terminado) return;
+        terminado = true;
+        btnAceptar.removeEventListener('click', onAceptar);
+        btnCancelar.removeEventListener('click', onCancelar);
+        btnCerrarX.removeEventListener('click', onCancelar);
+        dlg.removeEventListener('cancel', onCancelEvento);
+        if (dlg.open) dlg.close();
+        resolve(resultado);
+      }
+      function onAceptar() { cerrar(true); }
+      function onCancelar() { cerrar(false); }
+      function onCancelEvento(e) { e.preventDefault(); cerrar(false); }
+
+      btnAceptar.addEventListener('click', onAceptar);
+      btnCancelar.addEventListener('click', onCancelar);
+      btnCerrarX.addEventListener('click', onCancelar);
+      dlg.addEventListener('cancel', onCancelEvento);
+      dlg.showModal();
+      btnCancelar.focus();
+    });
+  }
+
+  /**
+   * Diálogo de 3 vías para importar sin confundir "Cancelar" con "Agregar".
+   * Devuelve Promise<'fusionar' | 'reemplazar' | null>.
+   */
+  function elegirImportacion(opciones) {
+    var o = opciones || {};
+    var dlg = document.getElementById('dialogo-importar');
+    if (!dlg || typeof dlg.showModal !== 'function') {
+      var rep = global.confirm(o.mensaje || '¿Reemplazar la tabla actual?');
+      return Promise.resolve(rep ? 'reemplazar' : 'fusionar');
+    }
+
+    document.getElementById('importar-titulo').textContent = o.titulo || '¿Cómo importar el archivo?';
+    document.getElementById('importar-mensaje').textContent = o.mensaje || '';
+    var btnFusionar = document.getElementById('importar-fusionar');
+    var btnReemplazar = document.getElementById('importar-reemplazar');
+    var btnCancelar = document.getElementById('importar-cancelar');
+    var btnCerrarX = document.getElementById('importar-cerrar-x');
+
+    return new Promise(function (resolve) {
+      var terminado = false;
+      function cerrar(modo) {
+        if (terminado) return;
+        terminado = true;
+        btnFusionar.removeEventListener('click', onFusionar);
+        btnReemplazar.removeEventListener('click', onReemplazar);
+        btnCancelar.removeEventListener('click', onCancelar);
+        btnCerrarX.removeEventListener('click', onCancelar);
+        dlg.removeEventListener('cancel', onCancelEvento);
+        if (dlg.open) dlg.close();
+        resolve(modo);
+      }
+      function onFusionar() { cerrar('fusionar'); }
+      function onReemplazar() { cerrar('reemplazar'); }
+      function onCancelar() { cerrar(null); }
+      function onCancelEvento(e) { e.preventDefault(); cerrar(null); }
+
+      btnFusionar.addEventListener('click', onFusionar);
+      btnReemplazar.addEventListener('click', onReemplazar);
+      btnCancelar.addEventListener('click', onCancelar);
+      btnCerrarX.addEventListener('click', onCancelar);
+      dlg.addEventListener('cancel', onCancelEvento);
+      dlg.showModal();
+      btnFusionar.focus();
+    });
+  }
+
+  // ───────────────── Portapapeles ─────────────────
+
+  function copiar(texto) {
+    var valor = String(texto || '');
+    if (!valor) return Promise.resolve(false);
+    if (global.navigator && global.navigator.clipboard && global.navigator.clipboard.writeText) {
+      return global.navigator.clipboard.writeText(valor).then(function () { return true; }).catch(function () {
+        return copiarRespaldo(valor);
+      });
+    }
+    return Promise.resolve(copiarRespaldo(valor));
+  }
+
+  function copiarRespaldo(valor) {
+    try {
+      var area = document.createElement('textarea');
+      area.value = valor;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      var ok = document.execCommand('copy');
+      area.remove();
+      return !!ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
   global.UI = {
     iniciarTema: iniciarTema,
     temaActual: temaActual,
     alternarTema: alternarTema,
     fijarTema: fijarTema,
-    paginador: paginador
+    paginador: paginador,
+    confirmar: confirmar,
+    elegirImportacion: elegirImportacion,
+    copiar: copiar
   };
 })(typeof window !== 'undefined' ? window : globalThis);
